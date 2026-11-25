@@ -1,0 +1,5 @@
+node_modules/
+data/
+.env
+# Enregistrements d'écran de référence : trop lourds pour GitHub et contiennent des données personnelles
+proposual/

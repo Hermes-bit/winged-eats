@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Winged Eats : maquettes</title>
+<style>
+  :root {
+    --primary: #E8552B;
+    --primary-dark: #C4411C;
+    --pharma: #1E88A8;
+    --ride: #2E7D4F;
+    --bg: #F4F1EC;
+    --card: #FFFFFF;
+    --text: #222222;
+    --muted: #7A7A7A;
+    --line: #E6E1DA;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 32px 16px;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: #DCD7CF; color: var(--text);
+  }
+  h1 { text-align: center; margin: 0 0 4px; }
+  .subtitle { text-align: center; color: #555; margin: 0 0 32px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 32px; justify-content: center; }
+  .screen-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .label { font-weight: 600; font-size: 15px; }
+  .note { font-size: 13px; color: #555; max-width: 300px; text-align: center; }
+
+  .phone {
+    width: 320px; height: 640px; border-radius: 36px;
+    background: #111; padding: 12px;
+    box-shadow: 0 12px 30px rgba(0,0,0,.25);
+  }
+  .screen {
+    width: 100%; height: 100%; border-radius: 26px;
+    background: var(--bg); overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .status-bar {
+    height: 28px; background: var(--card); font-size: 11px;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 18px; color: #333; flex-shrink: 0;
+  }
+  .header {
+    background: var(--card); padding: 10px 14px 12px;
+    border-bottom: 1px solid var(--line); flex-shrink: 0;
+  }
+  .header .title { font-size: 17px; font-weight: 700; }
+  .header .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .content { flex: 1; overflow: hidden; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .search {
+    background: var(--bg); border: 1px solid var(--line); border-radius: 12px;
+    padding: 9px 12px; font-size: 13px; color: var(--muted);
+  }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    font-size: 11px; padding: 5px 10px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--card);
+  }
+  .chip.active { background: var(--text); color: #fff; border-color: var(--text); }
+
+  .card {
+    background: var(--card); border-radius: 14px; overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08); flex-shrink: 0;
+  }
+  .img {
+    height: 84px; display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 12px; font-weight: 600; letter-spacing: .3px;
+  }
+  .card-body { padding: 8px 10px 10px; }
+  .card-title { font-size: 14px; font-weight: 700; }
+  .meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .badge {
+    display: inline-block; font-size: 10px; font-weight: 700;
+    padding: 3px 7px; border-radius: 6px; margin-top: 6px;
+  }
+  .b-open { background: #E3F4EA; color: #1F7A43; }
+  .b-guard { background: #E0F3F8; color: #17708A; }
+  .b-closed { background: #F1F1F1; color: #666; }
+  .b-promo { background: #FDE9E2; color: var(--primary-dark); }
+
+  .btn {
+    display: block; width: 100%; text-align: center; border: 0; border-radius: 12px;
+    padding: 12px; font-size: 14px; font-weight: 700; color: #fff; background: var(--primary);
+    flex-shrink: 0;
+  }
+  .btn.pharma { background: var(--pharma); }
+  .btn.ride { background: var(--ride); }
+  .btn.ghost { background: var(--card); color: var(--text); border: 1px solid var(--line); }
+
+  .row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+  .row.total { font-weight: 700; font-size: 15px; }
+  .item {
+    background: var(--card); border-radius: 12px; padding: 9px 10px;
+    display: flex; justify-content: space-between; align-items: center; font-size: 13px; flex-shrink: 0;
+  }
+  .price { font-weight: 700; white-space: nowrap; }
+  .qty {
+    display: inline-flex; align-items: center; gap: 8px; font-size: 13px;
+    border: 1px solid var(--line); border-radius: 8px; padding: 2px 8px;
+  }
+
+  .stepper { display: flex; flex-direction: column; gap: 0; }
+  .step { display: flex; gap: 10px; font-size: 13px; position: relative; padding-bottom: 14px; }
+  .step:not(:last-child)::before {
+    content: ""; position: absolute; left: 8px; top: 18px; bottom: 0; width: 2px; background: var(--line);
+  }
+  .step.done::before { background: var(--ride); }
+  .dot {
+    width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--line);
+    background: var(--card); flex-shrink: 0; margin-top: 1px;
+  }
+  .step.done .dot { background: var(--ride); border-color: var(--ride); }
+  .step.current .dot { border-color: var(--primary); background: #FDE9E2; }
+  .step.todo { color: var(--muted); }
+
+  .map {
+    height: 130px; border-radius: 14px; flex-shrink: 0; position: relative; overflow: hidden;
+    background:
+      linear-gradient(90deg, transparent 48%, #FFFFFF 48%, #FFFFFF 53%, transparent 53%),
+      linear-gradient(0deg, transparent 58%, #FFFFFF 58%, #FFFFFF 63%, transparent 63%),
+      linear-gradient(90deg, transparent 20%, #FFFFFF 20%, #FFFFFF 23%, transparent 23%),
+      #CFE8D5;
+  }
+  .pin {
+    position: absolute; width: 14px; height: 14px; border-radius: 50%;
+    border: 3px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.2);
+  }
+  .pin.me { background: #2F6BE0; left: 45%; top: 55%; }
+  .pin.shop { background: var(--primary); left: 70%; top: 25%; }
+  .pin.drop { background: var(--ride); left: 25%; top: 75%; }
+  .pin.pharm { background: var(--pharma); }
+
+  .vehicle { display: flex; gap: 8px; }
+  .veh {
+    flex: 1; background: var(--card); border: 2px solid var(--line); border-radius: 12px;
+    padding: 8px 4px; text-align: center; font-size: 11px;
+  }
+  .veh.sel { border-color: var(--ride); }
+  .veh b { display: block; font-size: 12px; margin-top: 2px; }
+
+  .tabbar {
+    height: 56px; background: var(--card); border-top: 1px solid var(--line);
+    display: flex; justify-content: space-around; align-items: center; font-size: 10px; color: var(--muted); flex-shrink: 0;
+  }
+  .tabbar .on { color: var(--primary); font-weight: 700; }
+  .tabbar .on.pharma { color: var(--pharma); }
+  .tabbar .on.ride { color: var(--ride); }
+
+  .toggle {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--card); border-radius: 12px; padding: 10px 12px; font-size: 13px; flex-shrink: 0;
+  }
+  .switch { width: 40px; height: 22px; border-radius: 999px; background: var(--ride); position: relative; }
+  .switch::after {
+    content: ""; position: absolute; right: 2px; top: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff;
+  }
+  .stat-row { display: flex; gap: 8px; }
+  .stat { flex: 1; background: var(--card); border-radius: 12px; padding: 10px; text-align: center; font-size: 11px; color: var(--muted); }
+  .stat b { display: block; font-size: 16px; color: var(--text); }
+</style>
+</head>
+<body>
+
+<h1>Winged Eats : maquettes</h1>
+<p class="subtitle">Application mobile client et espaces partenaires · Ouagadougou · Montants en FCFA</p>
+
+<div class="grid">
+
+  <!-- 1. Accueil client -->
+  <div class="screen-wrap">
+    <div class="phone"><div class="screen">
+      <div class="status-bar"><span>9:41</span><span>4G ▮▮▮</span></div>
+      <div class="header">
+        <div class="title">Bonjour Aminata 👋</div>
+        <div class="sub">📍 Gounghin, près du marché</div>
+      </div>
+      <div class="content">
+        <div class="search">Rechercher un plat, restaurant ou médicament</div>
+        <div class="stat-row">
+          <div class="stat"><b>🍔</b>Restaurants</div>
+          <div class="stat" style="color:#17708A"><b>💊</b>Pharmacie<br>de garde</div>
+          <div class="stat" style="color:#1F7A43"><b>🏍️</b>Course</div>
+        </div>
+        <div class="card">
+          <div class="img" style="background:#E8552B">Poulet braisé · Chez Maman Rose</div>
+          <div class="card-body">
+            <div class="card-title">Chez Maman Rose</div>
+            <div class="meta">Grillades · ⭐ 4.7 · 25-35 min · 1.2 km</div>
+            <span class="badge b-promo">Livraison offerte dès 5 000 FCFA</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="img" style="background:#8A5A3C">Riz gras · Le Baobab</div>
+          <div class="card-body">
+            <div class="card-title">Le Baobab</div>
+            <div class="meta">Africain · ⭐ 4.5 · 30-40 min · 2.4 km</div>
+            <span class="badge b-open">Ouvert</span>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar"><span class="on">Accueil</span><span>Commandes</span><span>Favoris</span><span>Profil</span></div>
+    </div></div>
+    <div class="label">1. Accueil client</div>
+    <div class="note">Trois services sur une seule app. Le choix du service est visible dès l'ouverture.</div>
+  </div>
+
+  <!-- 2. Fiche restaurant -->
+  <div class="screen-wrap">
+    <div class="phone"><div class="screen">
+      <div class="status-bar"><span>9:42</span><span>4G ▮▮▮</span></div>
+      <div class="header">
+        <div class="title">Chez Maman Rose</div>
+        <div class="sub">Grillades · ⭐ 4.7 (320 avis) · Ouvert jusqu'à 23h</div>
+      </div>
+      <div class="content">
+        <div class="chips"><span class="chip active">Populaire</span><span class="chip">Poulet</span><span class="chip">Boissons</span><span class="chip">Accompagnements</span></div>
+        <div class="item"><div><b>Demi-poulet braisé</b><div class="meta">Avec attiéké ou frites</div></div><div class="price">3 500</div></div>
+        <div class="item"><div><b>Poulet entier</b><div class="meta">Pour 3 personnes</div></div><div class="price">7 000</div></div>
+        <div class="item"><div><b>Brochettes de bœuf (x5)</b><div class="meta">Pimentées sur demande</div></div><div class="price">2 000</div></div>
+        <div class="item"><div><b>Jus de bissap</b><div class="meta">50 cl</div></div><div class="price">500</div></div>
+        <div class="item">
+          <div><b>Demi-poulet braisé</b> <span class="meta">× 2</span></div>
+          <div class="qty"><span>−</span><b>2</b><span>+</span></div>
+        </div>
+      </div>
+      <div style="padding:10px 12px;background:#fff;border-top:1px solid var(--line)">
+        <button class="btn">Voir le panier · 7 000 FCFA</button>
+      </div>
+    </div></div>
+    <div class="label">2. Fiche restaurant et menu</div>
+    <div class="note">Menu par catégories, prix en FCFA, quantités modifiables depuis la fiche.</div>
+  </div>
+
+  <!-- 3. Pharmacies de garde -->
+  <div class="screen-wrap">
+    <div class="phone"><div class="screen">
+      <div class="status-bar"><span>22:10</span><span>4G ▮▮▮</span></div>
+      <div class="header">
+        <div class="title">Pharmacies de garde</div>
+        <div class="sub">Ouagadougou · Zone Tampouy · Mise à jour aujourd'hui</div>
+      </div>
+      <div class="content">
+        <div class="map">
+          <div class="pin me"></div>
+          <div class="pin pharm" style="left:60%;top:30%"></div>
+          <div class="pin pharm" style="left:20%;top:60%"></div>
+        </div>
+        <div class="chips"><span class="chip active">De garde</span><span class="chip">Ouvert maintenant</span><span class="chip">Livraison</span></div>
+        <div class="card"><div class="card-body">
+          <div class="card-title">Pharmacie Notre Dame</div>
+          <div class="meta">Tampouy · 900 m · Garde jusqu'à 8h</div>
+          <span class="badge b-guard">De garde cette nuit</span>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn pharma" style="flex:1;padding:9px;font-size:13px">Appeler</button>
+            <button class="btn ghost" style="flex:1;padding:9px;font-size:13px">Commander</button>
+          </div>
+        </div></div>
+        <div class="card"><div class="card-body">
+          <div class="card-title">Pharmacie de la Patte d'Oie</div>
+          <div class="meta">Patte d'Oie · 1,8 km · Garde jusqu'à 8h</div>
+          <span class="badge b-guard">De garde cette nuit</span>
+        </div></div>
+      </div>
+      <div class="tabbar"><span>Accueil</span><span class="on pharma">Pharmacie</span><span>Commandes</span><span>Profil</span></div>
+    </div></div>
+    <div class="label">3. Pharmacie de garde</div>
+    <div class="note">Le statut « de garde » vient du planning officiel. Appel direct en un geste.</div>
+  </div>
+
+  <!-- 4. Commande pharmacie avec ordonnance -->
+  <div class="screen-wrap">
+    <div class="phone"><div class="screen">
+      <div class="status-bar"><span>22:14</span><span>4G ▮▮▮</span></div>
+      <div class="header">
+        <div class="title">Commande pharmacie</div>
+        <div class="sub">Pharmacie Notre Dame</div>
+      </div>
+      <div class="content">
+        <div class="card" style="padding:10px"><div class="card-title" style="font-size:13px">Ordonnance</div>
+          <div class="meta">Photo envoyée · Validation par le pharmacien en cours</div>
+          <span class="badge b-guard">En attente de validation</span>
+        </div>
+        <div class="item"><div><b>Paracétamol 500 mg</b><div class="meta">Sans ordonnance</div></div><div class="qty"><span>−</span><b>1</b><span>+</span></div></div>
+        <div class="item"><div><b>Amoxicilline 1 g</b><div class="meta">Sur ordonnance</div></div><div class="price">2 500</div></div>
+        <div class="item"><div><b>Sérum oral</b><div class="meta">Sans ordonnance</div></div><div class="price">300</div></div>
+        <div class="card" style="padding:10px">
+          <div class="row"><span>Sous-total</span><span>2 800</span></div>
+          <div class="row"><span>Livraison</span><span>800</span></div>
+          <div class="row total" style="margin-top:6px"><span>Total</span><span>3 600 FCFA</span></div>
+        </div>
+        <div class="toggle"><span>💵 Payer à la livraison</span><div class="switch"></div></div>
+        <div class="toggle" style="background:#fff"><span>📱 Orange / Moov / Coris Money</span><span style="color:var(--muted)">›</span></div>
+      </div>
+      <div style="padding:10px 12px;background:#fff;border-top:1px solid var(--line)">
+        <button class="btn pharma">Confirmer · 3 600 FCFA</button>
+      </div>
+    </div></div>
+    <div class="label">4. Commande avec ordonnance</div>
+    <div class="note">Les médicaments sur ordonnance restent bloqués jusqu'à validation par le pharmacien.</div>
+  </div>
+
+  <!-- 5. Suivi de commande -->
+  <div class="screen-wrap">
+    <div class="phone"><div class="screen">
+      <div class="status-bar"><span>12:58</span><span>4G ▮▮▮</span></div>
+      <div class="header">
+        <div class="title">Commande en cours</div>
+        <div class="sub">Arrivée estimée : 12h15</div>
+      </div>
+      <div class="content">
+        <div class="map">
+          <div class="pin shop"></div>
+          <div class="pin drop"></div>
+          <div class="pin me" style="left:55%;top:40%"></div>
+        </div>
+        <div class="card" style="padding:12px">
+          <div class="stepper">
+            <div class="step done"><div class="dot"></div><div><b>Commande confirmée</b><div class="meta">12h02</div></div></div>
+            <div class="step done"><div class="dot"></div><div><b>En préparation</b><div class="meta">12h05</div></div></div>
+            <div class="step done"><div class="dot"></div><div><b>Livreur en route</b><div class="meta">Kader · moto · 12h10</div></div></div>
+            <div class="step current"><div class="dot"></div><div><b>Livraison en cours</b><div class="meta">Dans environ 8 min</div></div></div>
+            <div class="step todo"><div class="dot"></div><div><b>Livrée</b></div></div>
+          </div>
+        </div>
+        <div class="card" style="padding:10px;display:flex;justify-content:space-between;align-items:center">
+          <div><b style="font-size:13px">Kader (livreur)</b><div class="meta">⭐ 4.9 · Code : 4821</div></div>
+          <button class="btn ghost" style="width:auto;padding:8px 12px;font-size:12px">Appeler</button>
+        </div>
+      </div>
+      <div style="padding:10px 12px;background:#fff;border-top:1px solid var(--line)">
+        <button class="btn ghost">Signaler un problème</button>
+      </div>
+    </div></div>
+    <div class="label">5. Suivi de commande</div>
+    <div class="note">Le même suivi sert aux repas, aux médicaments et à la livraison. Le code de confirmation protège la remise.</div>
+  </div>
+
+  <!-- 6. Demande de course -->
+  <div class="screen-wrap">
+    <div class="phone"><div class="screen">
+      <div class="status-bar"><span>7:30</span><span>4G ▮▮▮</span></div>
+      <div class="header">
+        <div class="title">Où allez-vous ?</div>
+        <div class="sub">Départ : Gounghin, près du marché</div>
+      </div>
+      <div class="content">
+        <div class="search" style="color:#222">🔎 Patte d'Oie, Marché central</div>
+        <div class="map" style="height:100px"><div class="pin me"></div><div class="pin shop" style="left:70%;top:30%"></div></div>
+        <div class="vehicle">
+          <div class="veh sel">🏍️<b>Moto</b>1 200 F<div class="meta">3 min</div></div>
+          <div class="veh">🚕<b>Taxi</b>2 500 F<div class="meta">5 min</div></div>
+          <div class="veh">🚗<b>Voiture</b>3 200 F<div class="meta">7 min</div></div>
+        </div>
+        <div class="card" style="padding:10px">
+          <div class="row"><span>Prix estimé</span><span class="price">1 200 FCFA</span></div>
+          <div class="meta">Tarif plafonné, sans surprise. Distance 3,4 km.</div>
+        </div>
+        <div class="toggle"><span>💵 Espèces</span><span style="color:var(--muted)">›</span></div>
+      </div>
+      <div style="padding:10px 12px;background:#fff;border-top:1px solid var(--line)">
+        <button class="btn ride">Commander une moto</button>
+      </div>
+    </div></div>
+    <div class="label">6. Demande de course</div>
+    <div class="note">Le prix estimé s'affiche avant la commande. Le client choisit le véhicule et le mode de paiement.</div>
+  </div>
+
+  <!-- 7. Espace livreur -->
+  <div class="screen-wrap">
+    <div class="phone"><div class="screen">
+      <div class="status-bar"><span>12:20</span><span>4G ▮▮▮</span></div>
+      <div class="header">
+        <div class="title">Bonjour Kader</div>
+        <div class="sub">Gains aujourd'hui : 8 500 FCFA</div>
+      </div>
+      <div class="content">
+        <div class="toggle"><span><b>En ligne</b> · Zone Gounghin</span><div class="switch"></div></div>
+        <div class="stat-row">
+          <div class="stat"><b>6</b>Courses</div>
+          <div class="stat"><b>4,8</b>Note</div>
+          <div class="stat"><b>12 km</b>Parcourus</div>
+        </div>
+        <div class="card" style="padding:12px;border:2px solid var(--ride)">
+          <div class="badge b-open" style="margin:0 0 6px">Nouvelle mission · 25 s</div>
+          <div class="card-title">Retrait : Chez Maman Rose</div>
+          <div class="meta">Livraison : Secteur 15, Gounghin · 2,1 km</div>
+          <div class="row" style="margin-top:8px"><span>Gain estimé</span><span class="price">1 500 FCFA</span></div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn ghost" style="flex:1;padding:9px;font-size:13px">Refuser</button>
+            <button class="btn ride" style="flex:1;padding:9px;font-size:13px">Accepter</button>
+          </div>
+        </div>
+        <div class="card" style="padding:10px"><div class="meta">Encaissement cash à reverser ce soir</div><div class="row total"><span>3 200 FCFA</span><span style="font-size:12px;color:var(--muted)">Reversé à 23h</span></div></div>
+      </div>
+      <div class="tabbar"><span class="on ride">Missions</span><span>Gains</span><span>Historique</span><span>Profil</span></div>
+    </div></div>
+    <div class="label">7. Espace livreur et chauffeur</div>
+    <div class="note">Une mission s'accepte en un geste, avec un délai de 30 secondes. Le suivi des encaissements cash est intégré.</div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "winged-eats",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Winged Eats : plateforme de commande de restaurants et maquis (Ouagadougou, Burkina Faso)",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server/index.js",
+    "test": "node --disable-warning=ExperimentalWarning --test"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "dependencies": {
+    "express": "^4.22.3"
+  }
+}

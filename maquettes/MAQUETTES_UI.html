@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Winged Eats - Maquettes UI (charte Burkina Faso)</title>
+<style>
+  :root {
+    --vert: #0B7A3E; --vert-dark: #075C2E; --vert-soft: #E5F2EA;
+    --rouge: #D62E2E; --rouge-soft: #FBE6E6;
+    --or: #F5B82E; --or-soft: #FFF4D6;
+    --sable: #FBF7F0; --ink: #1E1A16; --muted: #766E63; --line: #ECE3D4; --white: #FFFFFF;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; background: #F1EBE0; color: var(--ink); }
+  header.page { background: linear-gradient(90deg, var(--vert-dark), var(--vert) 60%, #1B8F4C); color: #fff; padding: 28px 40px; border-bottom: 6px solid var(--or); }
+  header.page h1 { margin: 0 0 6px; font-size: 26px; }
+  header.page p { margin: 0; opacity: .9; }
+  .strip { display: flex; height: 8px; }
+  .strip span { flex: 1; }
+  main { padding: 28px 40px 60px; }
+  h2 { font-size: 20px; margin: 36px 0 14px; color: var(--vert-dark); border-left: 5px solid var(--rouge); padding-left: 10px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 28px; }
+  .screen { width: 300px; }
+  .screen .label { font-size: 13px; font-weight: 700; color: var(--vert-dark); margin: 0 0 8px 4px; text-transform: uppercase; letter-spacing: .04em; }
+  .phone { width: 300px; height: 620px; background: #111; border-radius: 36px; padding: 10px; box-shadow: 0 14px 30px rgba(30,26,22,.25); }
+  .notch { width: 90px; height: 18px; background: #111; border-radius: 0 0 12px 12px; margin: 0 auto -18px; position: relative; z-index: 2; }
+  .shot { width: 100%; height: 100%; background: var(--sable); border-radius: 27px; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+  .status { height: 28px; font-size: 11px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; padding: 0 18px; flex-shrink: 0; }
+  .body { flex: 1; overflow: hidden; padding: 0 14px; font-size: 12px; }
+  .bnav { display: flex; justify-content: space-around; border-top: 1px solid var(--line); background: #fff; padding: 8px 0 10px; flex-shrink: 0; font-size: 10px; color: var(--muted); }
+  .bnav .on { color: var(--vert); font-weight: 700; }
+  .top { display: flex; align-items: center; justify-content: space-between; padding: 6px 0 10px; }
+  .top b { font-size: 15px; }
+  .search { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; color: var(--muted); font-size: 12px; margin-bottom: 10px; }
+  .promo { border-radius: 14px; padding: 14px; color: #fff; background: linear-gradient(120deg, var(--vert), var(--vert-dark)); margin-bottom: 12px; }
+  .promo.or { background: linear-gradient(120deg, var(--or), #E89A12); color: var(--ink); }
+  .promo b { font-size: 15px; display: block; margin-bottom: 4px; }
+  .pills { display: flex; gap: 6px; overflow: hidden; margin-bottom: 12px; }
+  .pill { white-space: nowrap; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 5px 10px; font-size: 11px; }
+  .pill.on { background: var(--vert); color: #fff; border-color: var(--vert); }
+  .rail { display: flex; justify-content: space-between; margin-bottom: 12px; text-align: center; font-size: 10px; }
+  .cat { width: 52px; }
+  .cat i { display: block; width: 48px; height: 48px; margin: 0 auto 4px; border-radius: 14px; font-style: normal; font-size: 22px; line-height: 48px; background: var(--vert-soft); }
+  .cat:nth-child(2) i { background: var(--or-soft); }
+  .cat:nth-child(3) i { background: var(--rouge-soft); }
+  h4 { font-size: 13px; margin: 10px 0 6px; }
+  .card { background: #fff; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); margin-bottom: 10px; }
+  .thumb { height: 84px; display: flex; align-items: center; justify-content: center; font-size: 36px; }
+  .t1 { background: linear-gradient(135deg, #F5B82E, #D62E2E); }
+  .t2 { background: linear-gradient(135deg, #0B7A3E, #F5B82E); }
+  .t3 { background: linear-gradient(135deg, #D62E2E, #7A1F1F); }
+  .card .info { padding: 8px 10px 10px; }
+  .card .info b { font-size: 13px; }
+  .meta { color: var(--muted); font-size: 10px; margin-top: 2px; }
+  .tag { display: inline-block; background: var(--or-soft); color: #8A5A00; border-radius: 6px; padding: 2px 6px; font-size: 9px; font-weight: 700; margin-top: 4px; }
+  .hero { height: 110px; border-radius: 14px; display: flex; align-items: flex-end; padding: 10px; color: #fff; font-weight: 700; font-size: 14px; background: linear-gradient(135deg, #D62E2E, #F5B82E); margin-bottom: 10px; }
+  .tabs { display: flex; gap: 14px; border-bottom: 1px solid var(--line); font-size: 11px; color: var(--muted); padding: 6px 0; margin-bottom: 8px; }
+  .tabs .on { color: var(--vert-dark); font-weight: 700; border-bottom: 2px solid var(--vert); padding-bottom: 4px; }
+  .item { display: flex; gap: 8px; background: #fff; border-radius: 12px; padding: 8px; margin-bottom: 8px; border: 1px solid var(--line); align-items: center; }
+  .item .ico { width: 46px; height: 46px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; background: var(--or-soft); flex-shrink: 0; }
+  .item .txt { flex: 1; font-size: 11px; }
+  .item .price { font-weight: 700; color: var(--vert-dark); }
+  .add { width: 24px; height: 24px; border-radius: 50%; background: var(--vert); color: #fff; text-align: center; line-height: 24px; font-weight: 700; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 22px 22px 0 0; padding: 14px; box-shadow: 0 -8px 20px rgba(0,0,0,.12); font-size: 11px; }
+  .sheet .grip { width: 40px; height: 4px; background: var(--line); border-radius: 4px; margin: 0 auto 10px; }
+  .opt { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line); }
+  .radio { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--vert); display: inline-block; vertical-align: middle; margin-right: 6px; }
+  .radio.on { background: var(--vert); box-shadow: inset 0 0 0 2px #fff; }
+  .box { width: 14px; height: 14px; border-radius: 3px; border: 2px solid var(--vert); display: inline-block; vertical-align: middle; margin-right: 6px; }
+  .box.on { background: var(--vert); }
+  .btn { background: var(--vert); color: #fff; text-align: center; border-radius: 12px; padding: 11px; font-weight: 700; font-size: 12px; margin-top: 10px; }
+  .btn.rouge { background: var(--rouge); }
+  .btn.or { background: var(--or); color: var(--ink); }
+  .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 11px; }
+  .row.total { font-weight: 700; font-size: 13px; border-top: 1px solid var(--line); margin-top: 4px; padding-top: 8px; }
+  .steps { position: relative; padding-left: 22px; margin-top: 10px; }
+  .steps div { position: relative; padding: 6px 0 12px; font-size: 11px; color: var(--muted); }
+  .steps div::before { content: ""; position: absolute; left: -18px; top: 9px; width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+  .steps div.done { color: var(--ink); }
+  .steps div.done::before { background: var(--vert); }
+  .steps div.now { color: var(--vert-dark); font-weight: 700; }
+  .steps div.now::before { background: var(--or); box-shadow: 0 0 0 4px var(--or-soft); }
+  .pin { code { font-family: inherit; } }
+  .map { height: 250px; border-radius: 14px; background: linear-gradient(160deg, #E9F3EC 0%, #F7EFD9 60%, #F3E0DC 100%); position: relative; border: 1px solid var(--line); margin-bottom: 10px; overflow: hidden; }
+  .map .road { position: absolute; background: #fff; }
+  .map .pin-m { position: absolute; width: 26px; height: 26px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--vert); border: 2px solid #fff; }
+  .map .pin-m.r { background: var(--rouge); }
+  .map .pin-m.o { background: var(--or); }
+  .map .me { position: absolute; width: 16px; height: 16px; border-radius: 50%; background: #2F6BFF; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(47,107,255,.2); }
+  .pin-code { font-size: 22px; letter-spacing: 6px; font-weight: 800; text-align: center; background: var(--or-soft); border-radius: 12px; padding: 10px; color: var(--vert-dark); margin-top: 8px; }
+  .ico-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; font-size: 13px; }
+  th { background: var(--vert-dark); color: #fff; text-align: left; padding: 10px; }
+  td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:nth-child(even) td { background: var(--sable); }
+  td code { background: var(--vert-soft); color: var(--vert-dark); padding: 1px 5px; border-radius: 5px; font-size: 12px; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 13px; }
+  .palette { display: flex; flex-wrap: wrap; gap: 14px; }
+  .sw { width: 170px; background: #fff; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); font-size: 12px; }
+  .sw div.c { height: 70px; }
+  .sw div.t { padding: 8px 10px; }
+  .note { background: var(--or-soft); border-left: 5px solid var(--or); padding: 12px 14px; border-radius: 10px; font-size: 14px; }
+  @media print { body { background: #fff; } .screen, .phone { break-inside: avoid; } }
+</style>
+</head>
+<body>
+
+<header class="page">
+  <h1>Winged Eats - Maquettes de l'application (charte Burkina Faso)</h1>
+  <p>Ouagadougou · Pilote : Ouaga 2000, Zone du Bois, Patte d'Oie · Structure inspirée des usages de livraison de repas, sans logo ni visuel de marque tiers</p>
+</header>
+<div class="strip"><span style="background:var(--vert)"></span><span style="background:var(--or)"></span><span style="background:var(--rouge)"></span></div>
+
+<main>
+
+<h2>1. Charte graphique</h2>
+<div class="palette">
+  <div class="sw"><div class="c" style="background:#0B7A3E"></div><div class="t"><b>Vert Faso</b><br>#0B7A3E · principal (boutons, nav)</div></div>
+  <div class="sw"><div class="c" style="background:#075C2E"></div><div class="t"><b>Vert foncé</b><br>#075C2E · titres, bannières</div></div>
+  <div class="sw"><div class="c" style="background:#F5B82E"></div><div class="t"><b>Or du Sahel</b><br>#F5B82E · promos, badges</div></div>
+  <div class="sw"><div class="c" style="background:#D62E2E"></div><div class="t"><b>Rouge Burkina</b><br>#D62E2E · alertes, accents</div></div>
+  <div class="sw"><div class="c" style="background:#FBF7F0"></div><div class="t"><b>Sable</b><br>#FBF7F0 · fond de l'app</div></div>
+  <div class="sw"><div class="c" style="background:#1E1A16"></div><div class="t"><b>Encre</b><br>#1E1A16 · texte · #766E63 secondaire</div></div>
+</div>
+<p class="note" style="margin-top:14px">Typographie : système (Segoe UI / Arial), titres en 700. Coins arrondis 12 à 14 px, cartes blanches avec filet beige #ECE3D4. Les vignettes sont des dégradés aux couleurs du drapeau et des icônes de plats, sans photos de marque.</p>
+
+<h2>2. Parcours et écrans (11 écrans)</h2>
+<div class="grid">
+
+  <!-- 1 Splash -->
+  <div class="screen"><p class="label">1 · Accueil / lancement</p>
+    <div class="phone"><div class="notch"></div><div class="shot">
+      <div class="status"><span>9:41</span><span>●●● 4G</span></div>
+      <div class="body" style="display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;background:linear-gradient(180deg,#0B7A3E,#075C2E);color:#fff;margin:-0 -14px;padding:20px">
+        <div style="font-size:54px">🍗</div>
+        <div style="font-size:24px;font-weight:800;margin-top:6px">Winged Eats</div>
+        <div style="font-size:12px;opacity:.9;margin-top:4px">Le meilleur du Faso, livré chez vous</div>
+        <div style="height:6px;width:120px;background:linear-gradient(90deg,#F5B82E,#D62E2E);border-radius:6px;margin-top:18px"></div>
+        <div class="btn or" style="width:200px;margin-top:26px">Commencer</div>
+      </div>
+      <div class="bnav" style="visibility:hidden"></div>
+    </div></div></div>
+
+  <!-- 2 Zone -->
+  <div class="screen"><p class="label">2 · Choix de la zone</p>
+    <div class="phone"><div class="notch"></div><div class="shot">
+      <div class="status"><span>9:41</span><span>●●● 4G</span></div>
+      <div class="body">
+        <div class="top"><b>Où êtes-vous ?</b></div>
+        <div class="search">🔍 Chercher un quartier</div>
+        <div class="card"><div class="info"><b>📍 Utiliser ma position GPS</b><div class="meta">Ajustez le repère sur la carte</div></div></div>
+        <h4>Zones pilotes</h4>
+        <div class="card"><div class="info"><b>Ouaga 2000</b><div class="meta">Livraison disponible · 6 km max</div></div></div>
+        <div class="card"><div class="info"><b>Zone du Bois</b><div class="meta">Livraison disponible · 6 km max</div></div></div>
+        <div class="card"><div class="info"><b>Patte d'Oie</b><div class="meta">Livraison disponible · 6 km max</div></div></div>
+        <div class="btn">Continuer</div>
+      </div>
+      <div class="bnav" style="visibility:hidden"></div>
+    </div></div></div>
+
+  <!-- 3 Accueil -->
+  <div class="screen"><p class="label">3 · Accueil (catalogue)</p>
+    <div class="phone"><div class="notch"></div><div class="shot">
+      <div class="status"><span>9:41</span><span>●●● 4G</span></div>
+      <div class="body">
+        <div class="top"><div><div class="meta">Livrer à</div><b>Ouaga 2000 ▾</b></div><div class="pill">👤</div></div>
+        <div class="search">🔍 Rechercher restaurants, plats…</div>
+        <div class="promo"><b>-20 % sur les grillades</b><span style="font-size:11px">Jusqu'à 2 000 F de réduction</span></div>
+        <div class="pills"><span class="pill on">Tout</span><span class="pill">Livraison &lt; 2 000 F</span><span class="pill">Ouvert</span><span class="pill">Note 4+</span></div>
+        <div class="rail">
+          <div class="cat"><i>🍗</i>Poulet</div><div class="cat"><i>🍖</i>Grillades</div><div class="cat"><i>🍚</i>Riz</div><div class="cat"><i>🥤</i>Boissons</div>
+        </div>
+        <h4>Les plus proches</h4>
+        <div class="card"><div class="thumb t1">🍗</div><div class="info"><b>Chez Maman Rose</b><div class="meta">Grillades · 1.2 km · 25-35 min</div><span class="tag">Livraison 500 F</span></div></div>
+      </div>
+      <div class="bnav"><span class="on">🏠<br>Accueil</span><span>🔎<br>Recherche</span><span>🧾<br>Commandes</span><span>👤<br>Compte</span></div>
+    </div></div></div>
+
+  <!-- 4 Recherche -->
+  <div class="screen"><p class="label">4 · Recherche</p>
+    <div class="phone"><div class="notch"></div><div class="shot">
+      <div class="status"><span>9:41</span><span>●●● 4G</span></div>
+      <div class="body">
+        <div class="top"><b>Recherche</b></div>
+        <div class="search" style="border-color:var(--vert)">🔍 poulet <span style="color:var(--ink)">braisé</span></div>
+        <h4>Suggestions</h4>
+        <div class="item"><div class="ico">🍗</div><div class="txt"><b>Demi-poulet braisé</b><div class="meta">Chez Maman Rose</div></div></div>
+        <div class="item"><div class="ico">🍟</div><div class="txt"><b>Alloco-poulet</b><div class="meta">Maquis Le Manguier</div></div></div>
+        <h4>Recherches récentes</h4>
+        <div class="chip-row"><span class="chip">Riz gras</span><span class="chip">Brochettes</span><span class="chip">Bissap</span></div>
+        <h4>Cuisines</h4>
+        <div class="chip-row"><span class="chip">🇧🇫 Burkinabè</span><span class="chip">Maquis</span><span class="chip">Fast-food</span></div>
+      </div>
+      <div class="bnav"><span>🏠<br>Accueil</span><span class="on">🔎<br>Recherche</span><span>🧾<br>Commandes</span><span>👤<br>Compte</span></div>
+    </div></div></div>
+
+  <!-- 5 Restaurant -->
+  <div class="screen"><p class="label">5 · Page restaurant</p>
+    <div class="phone"><div class="notch"></div><div class="shot">
+      <div class="status"><span>9:41</span><span>●●● 4G</span></div>
+      <div class="body">
+        <div class="hero">Chez Maman Rose<br><span style="font-size:10px;font-weight:400">Grillades · ★ 4.6 · 1.2 km · Livraison 500 F</span></div>
+        <div class="pills"><span class="pill on">Populaire</span><span class="pill">Poulet</span><span class="pill">Boissons</span></div>
+        <div class="tabs"><span class="on">Populaires</span><span>Poulet</span><span>Brochettes</span><span>Boissons</span></div>
+        <div class="item"><div class="ico">🍗</div><div class="txt"><b>Demi-poulet braisé</b><div class="meta">Poulet fermier, sauce piment</div><div class="price">3 500 F</div></div><div class="add">+</div></div>
+        <div class="item"><div class="ico">🍢</div><div class="txt"><b>Brochettes de bœuf (x5)</b><div class="meta">Oignons, piment</div><div class="price">2 000 F</div></div><div class="add">+</div></div>
+        <div class="item"><div class="ico">🥤</div><div class="txt"><b>Jus de bissap 50 cl</b><div class="meta">Fait maison</div><div class="price">500 F</div></div><div class="add">+</div></div>
+      </div>
+      <div class="bnav"><span>🏠<br>Accueil</span><span>🔎<br>Recherche</span><span>🧾<br>Commandes</span><span>👤<br>Compte</span></div>
+    </div></div></div>
+
+  <!-- 6 Personnalisation -->
+  <div class="screen"><p class="label">6 · Personnaliser un plat</p>
+    <div class="phone"><div class="notch"></div><div class="shot">
+      <div class="status"><span>9:41</span><span>●●● 4G</span></div>
+      <div class="body" style="opacity:.35">
+        <div class="hero" style="height:70px">Chez Maman Rose</div>
+        <div class="item"><div class="ico">🍗</div><div class="txt"><b>Demi-poulet braisé</b></div></div>
+      </div>
+      <div class="sheet">
+        <div class="grip"></div>
+        <b style="font-size:14px">Demi-poulet braisé</b>
+        <div class="meta">3 500 F · Poulet fermier</div>
+        <div style="margin-top:8px;font-weight:700;color:var(--vert-dark)">Accompagnement <span style="color:var(--rouge);font-weight:400">· obligatoire</span></div>
+        <div class="opt"><span><span class="radio on"></span>Attiéké</span><span>+0 F</span></div>
+        <div class="opt"><span><span class="radio"></span>Frites</span><span>+0 F</span></div>
+        <div class="opt"><span><span class="radio"></span>Alloco</span><span>+500 F</span></div>
+        <div style="margin-top:8px;font-weight:700;color:var(--vert-dark)">Suppléments <span style="color:var(--muted);font-weight:400">· max 2</span></div>
+        <div class="opt"><span><span class="box on"></span>Œuf</span><span>+300 F</span></div>
+        <div class="opt"><span><span class="box"></span>Sauce arachide</span><span>+200 F</span></div>
+        <div class="btn">Ajouter · 3 500 F</div>
+      </div>
+    </div></div></div>
+
+  <!-- 7 Panier -->
+  <div class="screen"><p class="label">7 · Panier et paiement</p>
+    <div class="phone"><div class="notch"></div><div class="shot">
+      <div class="status"><span>9:41</span><span>●●● 4G</span></div>
+      <div class="body">
+        <div class="top"><b>Mon panier</b><span class="meta">Chez Maman Rose</span></div>
+        <div class="item"><div class="ico">🍗</div><div class="txt"><b>2 × Demi-poulet braisé</b><div class="meta">Attiéké · Œuf</div></div><div class="price">7 300 F</div></div>
+        <div class="card" style="padding:10px;margin-top:8px">
+          <div class="row"><span>Sous-total</span><span>7 300 F</span></div>
+          <div class="row"><span>Livraison (3.1 km)</span><span>1 100 F</span></div>
+          <div class="row"><span>Frais de service</span><span>300 F</span></div>
+          <div class="row total"><span>Total</span><span>8 700 F</span></div>
+        </div>
+        <h4>Paiement</h4>
+        <div class="chip-row"><span class="chip" style="border-color:var(--vert);background:var(--vert-soft)">💵 Espèces</span><span class="chip">📱 Mobile Money</span></div>
+        <div class="btn">Commander · 8 700 F</div>
+      </div>
+      <div class="bnav"><span>🏠<br>Accueil</span><span>🔎<br>Recherche</span><span class="on">🧾<br>Commandes</span><span>👤<br>Compte</span></div>
+    </div></div></div>
+
+  <!-- 8 Suivi -->
+  <div class="screen"><p class="label">8 · Suivi de la commande</p>
+    <div class="phone"><div class="notch"></div><div class="shot">
+      <div class="status"><span>9:41</span><span>●●● 4G</span></div>
+      <div class="body">
+        <div class="top"><b>Commande #1042</b><span class="tag">En préparation</span></div>
+        <div class="map" style="height:120px"><div class="road" style="left:0;right:0;top:55px;height:8px"></div><div class="road" style="top:0;bottom:0;left:120px;width:8px"></div><div class="pin-m r" style="left:60px;top:20px"></div><div class="pin-m" style="left:200px;top:70px"></div><div class="me" style="left:110px;top:88px"></div></div>
+        <div class="steps">
+          <div class="done">Commande reçue</div>
+          <div class="done">Acceptée par le restaurant</div>
+          <div class="now">En préparation · ~15 min</div>
+          <div>Livreur en route</div>
+          <div>Livrée</div>
+        </div>
+        <div class="meta" style="margin-top:6px">Livreur : Abdoulaye · moto · 📞</div>
+        <div class="pin-code">4 7 1 9</div>
+        <div class="meta" style="text-align:center">Code PIN à donner au livreur à la remise</div>
+      </div>
+      <div class="bnav"><span>🏠<br>Accueil</span><span>🔎<br>Recherche</span><span class="on">🧾<br>Commandes</span><span>👤<br>Compte</span></div>
+    </div></div></div>
+
+  <!-- 9 Commandes -->
+  <div class="screen"><p class="label">9 · Commandes</p>
+    <div class="phone"><div class="notch"></div><div class="shot">
+      <div class="status"><span>9:41</span><span>●●● 4G</span></div>
+      <div class="body">
+        <div class="top"><b>Commandes</b></div>
+        <h4>En cours</h4>
+        <div class="card"><div class="info"><b>Chez Maman Rose</b><div class="meta">2 articles · 8 700 F</div><span class="tag">En préparation</span></div></div>
+        <h4>Passées</h4>
+        <div class="card"><div class="info"><b>Le Baobab</b><div class="meta">Riz gras · 2 000 F · hier</div><span class="tag" style="background:var(--vert-soft);color:var(--vert-dark)">Livrée</span></div></div>
+        <div class="card"><div class="info"><b>Maquis Le Manguier</b><div class="meta">Alloco-poulet · 2 500 F · 12 nov.</div><span class="tag" style="background:var(--rouge-soft);color:var(--rouge)">Annulée</span></div></div>
+      </div>
+      <div class="bnav"><span>🏠<br>Accueil</span><span>🔎<br>Recherche</span><span class="on">🧾<br>Commandes</span><span>👤<br>Compte</span></div>
+    </div></div></div>
+
+  <!-- 10 Carte -->
+  <div class="screen"><p class="label">10 · Carte et restaurants proches</p>
+    <div class="phone"><div class="notch"></div><div class="shot">
+      <div class="status"><span>9:41</span><span>●●● 4G</span></div>
+      <div class="body" style="padding:0">
+        <div style="position:relative;height:100%">
+          <div style="position:absolute;inset:0;background:linear-gradient(160deg,#E9F3EC,#F7EFD9 60%,#F3E0DC)"></div>
+          <div class="road" style="left:0;right:0;top:110px;height:10px;position:absolute"></div>
+          <div class="road" style="top:0;bottom:0;left:150px;width:10px;position:absolute"></div>
+          <div class="pin-m r" style="left:70px;top:70px;position:absolute"></div>
+          <div class="pin-m" style="left:200px;top:160px;position:absolute"></div>
+          <div class="pin-m o" style="left:110px;top:200px;position:absolute"></div>
+          <div class="me" style="left:188px;top:60px;position:absolute"></div>
+          <div class="search" style="position:absolute;top:10px;left:12px;right:12px;margin:0">🔍 Ouaga 2000</div>
+        </div>
+      </div>
+      <div class="sheet" style="height:250px">
+        <div class="grip"></div>
+        <b>12 restaurants dans la zone</b>
+        <div class="item" style="margin-top:8px"><div class="ico">🍗</div><div class="txt"><b>Chez Maman Rose</b><div class="meta">1.2 km · 25-35 min</div></div></div>
+        <div class="item"><div class="ico">🍛</div><div class="txt"><b>Le Baobab</b><div class="meta">2.0 km · 30-40 min</div></div></div>
+        <div class="meta" style="text-align:center;margin-top:6px">Voir la liste ↑</div>
+      </div>
+    </div></div></div>
+
+  <!-- 11 Compte -->
+  <div class="screen"><p class="label">11 · Compte et adresses</p>
+    <div class="phone"><div class="notch"></div><div class="shot">
+      <div class="status"><span>9:41</span><span>●●● 4G</span></div>
+      <div class="body">
+        <div class="top"><b>Mon compte</b></div>
+        <div class="card"><div class="info"><b>Awa Ouédraogo</b><div class="meta">+226 7X XX XX XX</div></div></div>
+        <h4>Adresses enregistrées</h4>
+        <div class="card"><div class="info"><b>🏠 Domicile</b><div class="meta">Ouaga 2000, près de la pharmacie · repère : portail bleu</div></div></div>
+        <div class="card"><div class="info"><b>🏢 Bureau</b><div class="meta">Zone du Bois, face au marché</div></div></div>
+        <h4>Préférences</h4>
+        <div class="card"><div class="info"><b>Langue</b> <span class="meta">Français</span></div></div>
+        <div class="card"><div class="info"><b>Aide et contact</b></div></div>
+      </div>
+      <div class="bnav"><span>🏠<br>Accueil</span><span>🔎<br>Recherche</span><span>🧾<br>Commandes</span><span class="on">👤<br>Compte</span></div>
+    </div></div></div>
+
+</div>
+
+<h2>3. Catégorisation des données</h2>
+<p>Même logique que les applications de livraison de repas : on classe les restaurants par <b>cuisine</b> (filtres et icônes), on les regroupe en <b>sections</b> éditoriales sur l'accueil, et chaque restaurant a un <b>menu</b> organisé en catégories, articles et options.</p>
+
+<table>
+  <thead><tr><th>Niveau</th><th>Donnée</th><th>Exemples (Ouagadougou)</th><th>Règle</th></tr></thead>
+  <tbody>
+    <tr><td>Catégorie visuelle (accueil)</td><td><code>restaurants.category</code></td><td>Grillades, Maquis, Cuisine africaine, Plats du jour, Boissons</td><td>Une seule catégorie principale par restaurant. Affichée en rail d'icônes.</td></tr>
+    <tr><td>Quartier / zone</td><td><code>restaurants.quartier</code></td><td>Ouaga 2000, Zone du Bois, Patte d'Oie</td><td>Filtre la liste selon la zone pilote choisie.</td></tr>
+    <tr><td>Filtre rapide (pastille)</td><td>Calculé</td><td>Tout, Livraison &lt; 2 000 F, Ouvert, Note 4+</td><td>Filtres cumulables. Calculés à partir des données du restaurant.</td></tr>
+    <tr><td>Section d'accueil</td><td>Calculé (tri)</td><td>Les plus proches, Livraison la moins chère, Promotions</td><td>Tri par distance croissante ou frais de livraison croissants. Limité à 6 cartes.</td></tr>
+    <tr><td>Distance et frais</td><td><code>latitude</code>, <code>longitude</code></td><td>1.2 km → 500 F</td><td>Frais = 300 F + 250 F/km, arrondis à 50 F. Rayon de livraison 6 km.</td></tr>
+    <tr><td>Rubrique du menu</td><td><code>menu_categories</code></td><td>Populaires, Poulet, Brochettes, Boissons</td><td>Onglets sticky sur la page restaurant. Chaque rubrique ouvre sa section.</td></tr>
+    <tr><td>Article (plat)</td><td><code>menu_items</code></td><td>Demi-poulet braisé 3 500 F, Jus de bissap 500 F</td><td>Prix en FCFA entiers. Disponibilité : un plat en rupture reste visible mais désactivé.</td></tr>
+    <tr><td>Groupe d'options</td><td><code>option_groups</code></td><td>Accompagnement (obligatoire, 1 choix), Suppléments (facultatif, max 2)</td><td>Obligatoire = bloque l'ajout tant que non choisi. Choix unique = boutons radio, multiple = cases.</td></tr>
+    <tr><td>Option (supplément)</td><td><code>options</code></td><td>Attiéké +0 F, Alloco +500 F, Œuf +300 F</td><td>Le surcoût s'ajoute au prix de l'article. Le serveur recalcule le total.</td></tr>
+    <tr><td>Statut de commande</td><td><code>orders.status</code></td><td>En attente → Acceptée → En préparation → Prête → Livrée (ou Refusée / Annulée)</td><td>Transitions contrôlées côté serveur. Le suivi affiche l'étape en cours.</td></tr>
+    <tr><td>Mode de paiement</td><td><code>orders.payment_method</code></td><td>Espèces (démo), Mobile Money (prévu)</td><td>Le code PIN à 4 chiffres valide la remise au client.</td></tr>
+  </tbody>
+</table>
+
+<h2>4. Vues et états à prévoir</h2>
+<div class="chip-row">
+  <span class="chip">Hors zone de livraison (&gt; 6 km)</span>
+  <span class="chip">Restaurant fermé</span>
+  <span class="chip">Plat en rupture</span>
+  <span class="chip">Panier vide</span>
+  <span class="chip">Connexion 3G faible (texte d'abord)</span>
+  <span class="chip">Commande refusée par le restaurant</span>
+</div>
+
+</main>
+</body>
+</html>
