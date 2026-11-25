@@ -106,8 +106,13 @@ function svg(viewBox, markup, cls) {
   return s;
 }
 const icon = (name) => svg('0 0 24 24', ICONS[name] || '', 'i');
-const logoMark = () => svg('0 0 32 32', `<rect width="32" height="32" rx="9" fill="#0B7A3E"/>
-  <path fill="#F5B82E" d="M6.5 24.5C8 15.5 15 8.5 25.5 6.5c.4 0 .7.4.5.8-1.2 2.6-3 4.6-5.2 6.1h3.3c.5 0 .7.5.4.9-1.5 2-3.6 3.4-6 4.1h2.6c.5 0 .7.6.3.9-3.6 2.8-8.4 4.3-14.4 5.7-.4.1-.6-.2-.5-.5z"/>`);
+// Logo de la maquette : carré or, aile rouge.
+const logoMark = () => svg('0 0 64 64', `<rect width="64" height="64" rx="18" fill="#F6B21B"/><path d="M10 38c8-15 24-25 44-26-7 4-12 8-15 12 7-3 13-3 18-2-8 4-14 8-17 13 5-1 10 0 13 3-12 5-27 8-36 6-4-1-7-3-7-6z" fill="#E0362A"/><path d="M10 38c10 1 22-1 32-6" stroke="#B8231A" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="17" cy="45" r="3.2" fill="#2A1712"/>`);
+function initials(name) {
+  const stop = ['chez', 'maquis', 'restaurant', 'resto'];
+  const w = displayName(name).split(/[\s'’-]+/).filter((x) => x && !stop.includes(x.toLowerCase()));
+  return (w.slice(0, 2).map((x) => x[0]).join('') || 'WE').toUpperCase();
+}
 
 const alertBox = (message) => el('div', { class: 'alert', role: 'alert' }, icon('alert'), el('span', { text: message }));
 
@@ -243,10 +248,11 @@ function start() {
     el('header', { class: 'topbar' },
       el('div', { class: 'wrap' },
         el('div', { class: 'topbar-row' },
-          el('span', { class: 'logo' }, logoMark()),
+          el('span', { class: 'lsq', 'aria-hidden': 'true', text: initials(restaurant.name) }),
           el('div', { class: 'who' },
-            el('small', { text: 'Espace restaurateur' }),
+            el('small', { text: 'Espace restaurateur · sans abonnement' }),
             el('b', null, name, isDemo(restaurant.name) ? el('span', { class: 'demo-chip', text: 'Démo' }) : null)),
+          el('a', { class: 'sublink', href: '/client/#/abonnement/r' }, 'Abonnements'),
           openSwitch,
           el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Se déconnecter', title: 'Se déconnecter', onclick: logout }, icon('logout'))),
         tabs)),

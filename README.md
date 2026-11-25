@@ -1,6 +1,16 @@
 # Winged Eats
 
-Application de commande de repas et de livraison à Ouagadougou (Burkina Faso). Module restaurants en version MVP ; pharmacies de garde et mobilité sont prévues après validation.
+Application de commande de repas et de livraison à Ouagadougou et Bobo-Dioulasso (Burkina Faso). Module restaurants en version MVP ; pharmacies de garde et mobilité sont prévues après validation.
+
+**Maquette en ligne** : https://hermes-bit.github.io/winged-eats/ (branche `gh-pages`, source : [maquettes/maquette-winged-eats.html](maquettes/maquette-winged-eats.html)). L'application reprend ce design.
+
+Dans l'application, les écrans suivants sont des **démonstrations**, clairement signalées :
+- paiement Orange Money et Moov Money ;
+- vérification par SMS ;
+- application livreur ;
+- abonnements restaurant et livreur.
+
+Ces fonctions attendent des comptes marchands (Orange, Moov) et un fournisseur SMS. Aujourd'hui, le paiement se fait en espèces à la livraison.
 
 ## Prérequis
 - Node.js 22.13 ou plus récent (version testée : 24.14.0).
