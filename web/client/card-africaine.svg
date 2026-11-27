@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 200">
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#eef0df"/><stop offset="1" stop-color="#cfd7b4"/></linearGradient>
+    <linearGradient id="bowl" x2="0" y2="1"><stop stop-color="#9d5a35"/><stop offset="1" stop-color="#57301f"/></linearGradient>
+    <linearGradient id="to" x2=".3" y2="1"><stop stop-color="#fffdf3"/><stop offset="1" stop-color="#e7ddc7"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-50%" width="160%" height="200%"><feGaussianBlur stdDeviation="7"/></filter>
+  </defs>
+  <path fill="url(#bg)" d="M0 0h360v200H0z"/>
+  <circle cx="312" cy="15" r="92" fill="#fff" opacity=".22"/>
+  <circle cx="41" cy="186" r="78" fill="#81975e" opacity=".09"/>
+  <ellipse cx="177" cy="167" rx="126" ry="15" fill="#58613d" opacity=".24" filter="url(#shadow)"/>
+  <ellipse cx="164" cy="112" rx="115" ry="58" fill="#ece7d7"/>
+  <ellipse cx="164" cy="108" rx="110" ry="54" fill="#fbfaf2"/>
+  <path d="M74 107c5 48 34 66 83 66s79-18 83-66z" fill="url(#bowl)"/>
+  <ellipse cx="157" cy="107" rx="83" ry="23" fill="#693820"/>
+  <ellipse cx="157" cy="104" rx="74" ry="17" fill="#a96c43"/>
+  <path d="M95 105c9-22 26-48 61-48s53 26 63 48c-9 13-27 19-62 19s-53-6-62-19z" fill="url(#to)"/>
+  <path d="M117 88c12-17 25-24 41-24" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".85"/>
+  <path d="M91 125c31 14 99 14 132 0" fill="none" stroke="#c18555" stroke-width="3" opacity=".35"/>
+  <path d="M230 125c3 24 16 35 38 35s36-11 38-35z" fill="#704027"/>
+  <ellipse cx="268" cy="125" rx="38" ry="13" fill="#4d6e35"/>
+  <ellipse cx="268" cy="122" rx="33" ry="9" fill="#73974c"/>
+  <g fill="#b5c77a"><circle cx="253" cy="122" r="3"/><circle cx="269" cy="118" r="3"/><circle cx="281" cy="125" r="3"/><circle cx="264" cy="128" r="2"/></g>
+  <path d="M73 87q-17-20-20-4 4 14 21 13zM79 91q-17-6-13 8 8 8 18 0z" fill="#7a9a58"/>
+  <circle cx="88" cy="130" r="8" fill="#c9674b"/><circle cx="88" cy="130" r="4" fill="#eea485"/>
+</svg>
