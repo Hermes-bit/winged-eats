@@ -477,6 +477,7 @@ function homeView(list, origin, redraw) {
   const partnersHs = inZone.length ? el('div', { class: 'hs' }, [...inZone].sort((a, b) => a.distance_km - b.distance_km).slice(0, 6).map(partnerCard)) : null;
 
   return [
+    el('header', { class: 'home-header' },
     el('div', { class: 'pad fl sp', style: 'padding-top:calc(14px + env(safe-area-inset-top))' },
       el('button', { class: 'addr', type: 'button', onclick: () => zoneSheet(origin.city || 'ouaga'), 'aria-label': `Adresse : ${origin.label}. Modifier` },
         el('div', { class: 'm', text: 'Livrer à' }), el('div', { class: 't' }, `${origin.label}, ${city.name}`, I('down'))),
@@ -484,7 +485,7 @@ function homeView(list, origin, redraw) {
     el('div', { class: 'pad home-intro' },
       el('h1', null, firstName ? `Bonjour ${firstName},` : 'Bonjour,', el('br'), el('em', { text: 'on se régale ?' })),
       el('p', { class: 'm', text: 'Les bonnes adresses de votre quartier, ici.' }),
-      el('a', { class: 'home-search', href: '#/search' }, I('search'), 'Un plat, un restaurant, une envie…')),
+      el('a', { class: 'home-search', href: '#/search' }, I('search'), 'Un plat, un restaurant, une envie…'))),
     !browsing ? el('div', { class: 'pad', style: 'margin-top:14px' }, el('div', { class: 'banner' },
       el('div', { class: 'banner-copy' },
         el('div', { class: 'banner-label', text: "Les saveurs d’ici ✦" }),
@@ -1051,8 +1052,10 @@ async function renderSearch(alive) {
   const input = el('input', { type: 'search', placeholder: 'Plats, restaurants, courses…', 'aria-label': 'Rechercher', value: searchQuery, autocomplete: 'off', enterkeyhint: 'search', style: 'flex:1;border:0;background:none;font-size:14px;outline:none' });
   const clear = el('button', { class: 'circ', type: 'button', style: 'width:30px;height:30px;background:#fff', 'aria-label': 'Effacer', hidden: !searchQuery }, I('x'));
   const body = el('div', { 'aria-live': 'polite' });
-  setView(el('div', { class: 'pad', style: 'padding-top:calc(14px + env(safe-area-inset-top))' },
-    el('form', { class: 'fl', role: 'search', style: 'background:#F4ECE4;border-radius:12px;height:44px;padding:0 8px 0 12px', onsubmit: (e) => { e.preventDefault(); rememberSearch(input.value); input.blur(); } }, I('search'), input, clear)), body);
+  setView(el('div', { class: 'pad search-header' },
+    el('h1', { class: 'search-title', text: 'Trouver votre bonheur' }),
+    el('p', { class: 'm', text: 'Un plat ou une adresse près de vous.' }),
+    el('form', { class: 'fl search-form', role: 'search', onsubmit: (e) => { e.preventDefault(); rememberSearch(input.value); input.blur(); } }, I('search'), input, clear)), body);
   let list = [];
   let menus = [];
   let loaded = false;
