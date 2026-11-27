@@ -4,9 +4,10 @@
 // Stratégie « réseau d'abord » : on sert toujours la dernière version, le cache ne sert qu'hors connexion.
 // Les appels /api/ (commandes, menus) ne sont jamais mis en cache.
 
-const CACHE = 'winged-eats-v4';
+const CACHE = 'winged-eats-v5';
 const SHELL = [
-  './', './index.html', './app.js?v=4', './refinement.css?v=4', './manifest.webmanifest',
+  './', './index.html', './app.js?v=4', './refinement.css?v=5',
+  './card-grillades.svg', './card-africaine.svg', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', '../shared/demo-api.js',
 ];
 
