@@ -40,25 +40,31 @@ Au premier démarrage, la base de démonstration est créée et les **codes part
 ## Configuration
 Les tarifs et paramètres sont dans [server/config.js](server/config.js) : frais de livraison, rayon, commission par défaut, longueur du code de remise.
 
-### Restaurants réels et carte Google (facultatif)
+### Carte et restaurants réels
+
+L'onglet « À emporter » utilise MapLibre et le style Liberty d'OpenFreeMap pour afficher les restaurants partenaires ; touchez un repère puis sa fiche pour consulter le menu. L'accès au fond de carte nécessite une connexion internet. Si la carte ne charge pas, un plan indicatif est affiché.
+
+Le suivi de commande affiche l'adresse enregistrée à la commande, pas une position de livreur : le suivi GPS en direct n'est pas encore disponible. Le fond de carte est fourni par OpenFreeMap et les données cartographiques par OpenStreetMap ; des requêtes sont envoyées à ces services lors de l'affichage.
+
+### Restaurants réels Google (facultatif)
 Les clés se collent dans le fichier **`.env`** à la racine du projet. Il n'est jamais versionné ; le modèle est `.env.example`.
 ```
 GOOGLE_PLACES_API_KEY=...     # clé serveur : Places API (New)
-GOOGLE_MAPS_BROWSER_KEY=...   # clé navigateur : Maps JavaScript API (fond de carte)
+GOOGLE_MAPS_BROWSER_KEY=...   # conservée pour compatibilité, non utilisée pour la carte client
 ```
 Redémarrez `npm start` après chaque modification.
 
 Dans Google Cloud :
-- activez « Places API (New) » et « Maps JavaScript API » ;
+- activez « Places API (New) » ;
 - liez un **compte de facturation** au projet. Sans facturation, Google renvoie les restaurants sans leurs photos ni leurs avis ;
-- restreignez la clé navigateur à Maps JavaScript API et au domaine du site.
+- restreignez la clé serveur à Places API (New).
 
 Fonctionnement :
 - Les restaurants de Ouagadougou sont demandés **en direct** à Google : populaires autour de l'adresse, par catégorie, ou par recherche. Rien n'est enregistré en base, conformément aux conditions de Google Maps Platform. C'est pourquoi photos, notes et horaires restent toujours à jour.
 - Ils sont classés dans des catégories façon plateforme de livraison : Maquis, Grillades, Africaine, Fast-food, Pizza, Chawarma, Asiatique, Européenne, Café, Boulangerie, Desserts.
 - Ce sont des fiches vitrines (appeler, itinéraire) avec la mention « Bientôt sur Winged Eats ». Seuls les restaurants partenaires sont commandables.
 - Chaque affichage consomme des appels facturés au-delà du quota gratuit de Google. Deux plafonds protègent la facture : `GOOGLE_MAX_CALLS_PER_MINUTE` et `GOOGLE_MAX_CALLS_PER_DAY`.
-- Sans clé, l'application fonctionne avec ses seules données et un plan simplifié.
+- Les établissements Google restent accessibles dans la recherche et les listes, mais ne sont pas affichés sur le fond OpenFreeMap. Sans clé Google, l'application fonctionne avec ses seules données partenaires.
 
 ## Limites actuelles
 - Paiement en espèces uniquement.

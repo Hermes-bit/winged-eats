@@ -116,6 +116,12 @@ body.bare #app { padding-bottom: 0; }
 .nb a .ic { width: 21px; height: 21px; }
 .nb .badge { top: 3px; }
 .live { bottom: calc(var(--nav) + 8px + env(safe-area-inset-bottom)); }
+.mapw .gmap, .trackw .gmap { position: absolute; inset: 0; width: 100%; height: 100%; }
+.mapw .maplibregl-ctrl-bottom-right { bottom: 150px; }
+.trackw .maplibregl-ctrl-bottom-right { bottom: 90px; }
+.mapw .mpin.gm { position: relative; transform: none; }
+.map-failure { position: absolute; top: 115px; left: 16px; right: 16px; z-index: 4; }
+.track-message { position: absolute; left: 16px; right: 16px; bottom: 35px; z-index: 3; background: #fffdfa; border-radius: 12px; padding: 10px 12px; box-shadow: 0 2px 12px #30231d22; }
 
 .hero, .hero .ft, .gal, .gal .ft { height: 220px; }
 .restaurant-intro { padding-top: 20px; }
