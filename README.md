@@ -2,7 +2,7 @@
 
 Application de commande de repas et de livraison à Ouagadougou et Bobo-Dioulasso (Burkina Faso). Module restaurants en version MVP ; pharmacies de garde et mobilité sont prévues après validation.
 
-**Maquette en ligne** : https://hermes-bit.github.io/winged-eats/ (branche `gh-pages`, source : [maquettes/maquette-winged-eats.html](maquettes/maquette-winged-eats.html)). L'application reprend ce design.
+**Maquette d'origine en ligne** : https://hermes-bit.github.io/winged-eats/ (branche `gh-pages`, source : [maquettes/maquette-winged-eats.html](maquettes/maquette-winged-eats.html)). L'interface client reprend son identité et propose un accueil et des fiches restaurant au style actualisé.
 
 Dans l'application, les écrans suivants sont des **démonstrations**, clairement signalées :
 - paiement Orange Money et Moov Money ;
