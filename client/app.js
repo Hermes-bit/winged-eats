@@ -182,7 +182,7 @@ const putMenu = (m) => cache.set(`menu:${m.id}`, { at: Date.now(), promise: Prom
 // Restaurants réels (Google Places) : chargés en direct, jamais enregistrés ; mémoire de 5 minutes.
 let appConfig = { google: { places: false, maps_key: null, map_id: 'DEMO_MAP_ID' }, categories: [] };
 const googleOn = () => Boolean(appConfig.google && appConfig.google.places);
-const catInfo = (key) => appConfig.categories.find((c) => c.key === key) || { key, label: 'Restaurant', emoji: '' };
+const catInfo = (key) => appConfig.categories.find((c) => c.key === key) || { key, label: ({ grillades: 'Grillades', africaine: 'Africaine', maquis: 'Maquis', cafe: 'Boissons' })[key] || 'Restaurant', emoji: '' };
 const PT = 5 * 60000;
 const gNearby = (o) => cached(`gn:${okey(o)}`, PT, () => api(`/places/nearby?${qs(o)}`));
 const gCategory = (o, c) => cached(`gc:${c}:${okey(o)}`, PT, () => api(`/places/search?${qs(o)}&cat=${encodeURIComponent(c)}`));
@@ -461,6 +461,8 @@ function filterPlaces(list) {
 
 function homeView(list, origin, redraw) {
   const city = cityOf(origin);
+  const profile = store.get('we_profile', {});
+  const firstName = (profile.name || '').trim().split(/\s+/)[0];
   const inZone = list.filter((r) => r.in_delivery_zone);
   const browsing = Boolean(homeState.category) || homeState.filters.size > 0;
   const cats = googleOn() ? appConfig.categories.map((c) => c.key) : [...new Set(list.map(catKeyOf))];
@@ -484,27 +486,28 @@ function homeView(list, origin, redraw) {
       el('button', { class: 'addr', type: 'button', onclick: () => zoneSheet(origin.city || 'ouaga'), 'aria-label': `Adresse : ${origin.label}. Modifier` },
         el('div', { class: 'm', text: 'Livrer à' }), el('div', { class: 't' }, `${origin.label}, ${city.name}`, I('down'))),
       el('a', { class: 'circ', href: '#/orders', 'aria-label': 'Mes commandes' }, I('bell'), hasOrders ? el('i', { class: 'dot' }) : null)),
-    el('div', { class: 'pad', style: 'margin-top:14px' },
-      el('div', { class: 'home-heading' },
-        el('h1', { text: 'Une envie, un bon repas.' }),
-        el('p', { text: 'Les saveurs de votre quartier, à portée de main.' })),
-      el('a', { class: 'home-search', href: '#/search' }, I('search'), el('span', { text: 'Rechercher un plat ou un restaurant' }))),
+    el('div', { class: 'pad home-intro' },
+      el('h1', null, firstName ? `Bonjour ${firstName},` : 'Bonjour,', el('br'), el('em', { text: 'on se régale ?' })),
+      el('p', { class: 'm', text: 'Les bonnes adresses de votre quartier, ici.' }),
+      el('a', { class: 'home-search', href: '#/search' }, I('search'), 'Un plat, un restaurant, une envie…')),
+    !browsing ? el('div', { class: 'pad', style: 'margin-top:14px' }, el('div', { class: 'banner' },
+      el('div', { class: 'banner-copy' },
+        el('div', { class: 'banner-label', text: "Les saveurs d’ici ✦" }),
+        el('div', { class: 'bt', text: `Le meilleur de ${city.short}, chez vous.` }),
+        el('div', { class: 'bs', text: minFee !== null ? `Livraison dès ${fmtF(minFee)} · paiement en espèces` : 'Les restaurants partenaires arrivent bientôt.' }),
+        el('button', { class: 'chip', type: 'button', onclick: toPartners }, 'Je découvre', I('right'))),
+      el('div', { class: 'banner-art', 'aria-hidden': 'true' }, useSvg('f-meal')))) : null,
     el('div', { class: 'chips', style: 'margin-top:12px' },
       el('button', { class: !homeState.category ? 'chip on' : 'chip', type: 'button', onclick: reset }, 'Tout'),
       el('button', { class: 'chip', type: 'button', onclick: toPartners }, 'Restaurants'),
       el('button', { class: 'chip', type: 'button', onclick: () => toast('Courses : bientôt disponible', 'info') }, 'Courses', el('span', { class: 'soon', text: 'bientôt' })),
       el('button', { class: 'chip', type: 'button', onclick: () => toast('Pharmacies de garde : bientôt disponible', 'info') }, 'Pharmacie', el('span', { class: 'soon', text: 'bientôt' })),
       el('button', { class: homeState.category === 'cafe' ? 'chip on' : 'chip', type: 'button', onclick: () => { homeState.category = homeState.category === 'cafe' ? null : 'cafe'; redraw(); } }, 'Boissons')),
+    sec('Une envie particulière ?'),
     el('div', { class: 'cats', role: 'group', 'aria-label': 'Catégories' }, cats.map((k) => el('button', {
       class: homeState.category === k ? 'cat on' : 'cat', type: 'button', 'aria-pressed': String(homeState.category === k),
       onclick: () => { homeState.category = homeState.category === k ? null : k; redraw(); },
     }, F(CAT_FOOD[k] || 'riz', 52), catInfo(k).label))),
-    !browsing ? el('div', { class: 'pad', style: 'margin-top:8px' }, el('div', { class: 'banner' },
-      el('div', { style: 'flex:1' },
-        el('div', { class: 'bt', text: 'Winged Days' }),
-        el('div', { class: 'bs', text: minFee !== null ? `Livraison dès ${fmtF(minFee)} à ${origin.label}. Paiement en espèces à la livraison.` : 'Les restaurants partenaires de votre quartier arrivent bientôt.' }),
-        el('button', { class: 'chip', type: 'button', onclick: toPartners }, "J'en profite")),
-      el('div', { style: 'width:92px;height:80px' }, F('bro', 80)))) : null,
     el('div', { class: 'chips', style: 'margin-top:12px' },
       el('a', { class: 'chip', href: '#/offres' }, I('tag'), 'Offres'),
       el('button', { class: homeState.filters.has('rating') ? 'chip on' : 'chip', type: 'button', onclick: () => toggleFilter('rating') }, I('star'), '4,5 et +'),
@@ -707,10 +710,9 @@ async function renderRestaurant(id, alive) {
   const tabs = menu.categories.map((c, i) => el('button', { class: i === 0 ? 'chip on' : 'chip', type: 'button', 'data-t': `c${c.id}`, onclick: () => document.getElementById(`c${c.id}`).scrollIntoView({ behavior: scrollBehavior() }) }, c.name));
   cartBarSlot = el('div');
   setView(
-    el('div', { class: 'hero' }, F(restoKey(menu), 190),
+    el('div', { class: 'hero' }, F(restoKey(menu), 210),
       el('div', { class: 'acts' }, el('button', { class: 'circ w', type: 'button', 'aria-label': 'Retour', onclick: () => goBack('#/') }, I('back')), favBtn(id, 'circ w'))),
-    el('div', { class: 'pad', style: 'margin-top:-28px;position:relative' },
-      el('div', { class: 'logo-sq', 'aria-hidden': 'true', text: initials(menu.name) }),
+    el('div', { class: 'pad restaurant-intro' },
       el('h1', { class: 'rname', style: 'margin-bottom:0' }, name, isDemo(menu.name) ? el('span', { class: 'soonp', style: 'font-size:12px', text: ' · Démo' }) : null),
       el('div', { class: 'm', text: [menu.category, menu.quartier, menu.address_hint].filter(Boolean).join(' · ') }),
       el('div', { class: 'kp2' },
@@ -1298,7 +1300,7 @@ async function renderPlace(id, alive) {
   const tel = p.phone ? String(p.phone).replace(/[^\d+]/g, '') : null;
   setView(
     el('div', { class: 'hero' },
-      p.photos.length ? el('div', { class: 'gal' }, p.photos.map((ph, i) => F(k, 190, photoImg(ph, 900), p.photos.length > 1 ? el('span', { class: 'tag d', text: `${i + 1}/${p.photos.length}` }) : null))) : F(k, 190),
+      p.photos.length ? el('div', { class: 'gal' }, p.photos.map((ph, i) => F(k, 210, photoImg(ph, 900), p.photos.length > 1 ? el('span', { class: 'tag d', text: `${i + 1}/${p.photos.length}` }) : null))) : F(k, 210),
       el('div', { class: 'acts' }, el('button', { class: 'circ w', type: 'button', 'aria-label': 'Retour', onclick: () => goBack('#/') }, I('back')),
         p.maps_uri ? el('a', { class: 'circ w', href: p.maps_uri, target: '_blank', rel: 'noopener', 'aria-label': 'Ouvrir dans Google Maps' }, I('loc')) : el('span'))),
     el('div', { class: 'pad', style: 'margin-top:-28px;position:relative' },
