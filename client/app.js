@@ -710,7 +710,7 @@ async function renderRestaurant(id, alive) {
   const tabs = menu.categories.map((c, i) => el('button', { class: i === 0 ? 'chip on' : 'chip', type: 'button', 'data-t': `c${c.id}`, onclick: () => document.getElementById(`c${c.id}`).scrollIntoView({ behavior: scrollBehavior() }) }, c.name));
   cartBarSlot = el('div');
   setView(
-    el('div', { class: 'hero' }, F(restoKey(menu), 210),
+    el('div', { class: 'hero' }, F(restoKey(menu), 220),
       el('div', { class: 'acts' }, el('button', { class: 'circ w', type: 'button', 'aria-label': 'Retour', onclick: () => goBack('#/') }, I('back')), favBtn(id, 'circ w'))),
     el('div', { class: 'pad restaurant-intro' },
       el('h1', { class: 'rname', style: 'margin-bottom:0' }, name, isDemo(menu.name) ? el('span', { class: 'soonp', style: 'font-size:12px', text: ' · Démo' }) : null),
@@ -1300,7 +1300,7 @@ async function renderPlace(id, alive) {
   const tel = p.phone ? String(p.phone).replace(/[^\d+]/g, '') : null;
   setView(
     el('div', { class: 'hero' },
-      p.photos.length ? el('div', { class: 'gal' }, p.photos.map((ph, i) => F(k, 210, photoImg(ph, 900), p.photos.length > 1 ? el('span', { class: 'tag d', text: `${i + 1}/${p.photos.length}` }) : null))) : F(k, 210),
+      p.photos.length ? el('div', { class: 'gal' }, p.photos.map((ph, i) => F(k, 220, photoImg(ph, 900), p.photos.length > 1 ? el('span', { class: 'tag d', text: `${i + 1}/${p.photos.length}` }) : null))) : F(k, 220),
       el('div', { class: 'acts' }, el('button', { class: 'circ w', type: 'button', 'aria-label': 'Retour', onclick: () => goBack('#/') }, I('back')),
         p.maps_uri ? el('a', { class: 'circ w', href: p.maps_uri, target: '_blank', rel: 'noopener', 'aria-label': 'Ouvrir dans Google Maps' }, I('loc')) : el('span'))),
     el('div', { class: 'pad', style: 'margin-top:-28px;position:relative' },
