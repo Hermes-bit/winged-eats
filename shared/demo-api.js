@@ -121,7 +121,7 @@
 
   function formatOrder(o, internal) {
     const out = {
-      id: o.id, restaurant_id: o.restaurant_id, status: o.status, customer_name: o.customer_name, repere: o.repere, note: o.note,
+      id: o.id, restaurant_id: o.restaurant_id, status: o.status, customer_name: o.customer_name, latitude: o.latitude, longitude: o.longitude, repere: o.repere, note: o.note,
       distance_km: o.distance_km, subtotal: o.subtotal, delivery_fee: o.delivery_fee, total: o.total, payment_method: 'CASH',
       pickup_code: o.pickup_code, created_at: o.created_at, updated_at: o.updated_at, items: o.items,
     };
@@ -175,7 +175,7 @@
     const fee = deliveryFee(km);
     const now = Date.now();
     const o = {
-      id: d.nextId++, restaurant_id: r.id, status: 'PENDING', sim: true, customer_name: name, customer_phone: phone, repere, note,
+      id: d.nextId++, restaurant_id: r.id, status: 'PENDING', sim: true, customer_name: name, customer_phone: phone, latitude: lat, longitude: lon, repere, note,
       distance_km: Math.round(km * 100) / 100, subtotal, delivery_fee: fee, total: subtotal + fee, commission: Math.round(subtotal * COMMISSION),
       pickup_code: String(Math.floor(Math.random() * 10000)).padStart(4, '0'), created_ms: now, created_at: sqlNow(now), updated_at: sqlNow(now), items: lines,
     };

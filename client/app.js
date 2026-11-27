@@ -917,10 +917,10 @@ function trackView(o, r, onCancel) {
   const s = STATUS[o.status];
   const failed = s.step < 0;
   const k = restoKey(r);
-  const atClient = o.status === 'DELIVERED';
   return [
     el('div', { class: 'trackw' },
-      planSvg(`<path d="M60 190L150 210L160 330L250 360" stroke="${failed ? '#CDBDB2' : '#E0362A'}" stroke-width="5" fill="none" stroke-linecap="round" stroke-dasharray="${atClient ? '0' : '10 8'}"/><circle cx="60" cy="190" r="9" fill="#22150F"/><circle cx="250" cy="360" r="10" fill="#E0362A" stroke="#fff" stroke-width="3"/>`),
+      el('div', { class: 'gmap', 'aria-label': 'Carte de la livraison' }),
+      el('div', { class: 'track-message m', text: 'Position du livreur en direct : bientôt disponible.' }),
       el('div', { style: 'position:absolute;top:calc(12px + env(safe-area-inset-top));left:16px;z-index:3' }, el('a', { class: 'circ w', href: '#/orders', 'aria-label': 'Mes commandes' }, I('back')))),
     el('div', { class: 'tsheet', 'aria-live': 'polite' },
       el('div', { class: 'grab' }),
@@ -962,22 +962,44 @@ async function renderOrder(id, alive) {
   setView(el('div', { class: 'skel', style: 'height:330px;border-radius:0' }), el('div', { class: 'pad' }, el('div', { class: 'skel', style: 'height:160px;margin-top:16px' })));
   let r = null;
   let timer = null;
+  let trackMap = null;
+  let renderVersion = 0;
+  let lastOrder = '';
   const stop = () => { if (timer) clearInterval(timer); timer = null; };
-  onCleanup(stop);
+  onCleanup(() => { stop(); renderVersion++; if (trackMap) trackMap.remove(); });
   const draw = async () => {
     try {
       const o = await api(`/orders/${id}?phone=${encodeURIComponent(phone)}`);
       if (!alive()) return stop();
       if (!r) r = await restaurantMeta(o);
       if (!alive()) return stop();
+      const signature = JSON.stringify(o);
+      if (signature === lastOrder) { if (TERMINAL.includes(o.status)) stop(); return; }
+      lastOrder = signature;
+      const version = ++renderVersion;
+      if (trackMap) { trackMap.remove(); trackMap = null; }
       setView(trackView(o, r, async () => {
         const ok = await confirmSheet({ title: 'Annuler la commande ?', text: "L'annulation est possible tant que le restaurant n'a pas accepté.", ok: 'Oui, annuler', cancel: 'Non, garder' });
         if (!ok) return;
         try { await api(`/orders/${id}/cancel`, { method: 'POST', body: { phone } }); toast('Commande annulée'); draw(); } catch (err) { toast(err.message, 'info'); }
       }));
+      const host = main.querySelector('.trackw .gmap');
+      if (Number.isFinite(o.latitude) && Number.isFinite(o.longitude)) {
+        WEMap.create(host, [o.longitude, o.latitude]).then(({ map, lib }) => {
+          if (!alive() || version !== renderVersion) { map.remove(); return; }
+          trackMap = map;
+          new lib.Marker({ color: '#d74331' }).setLngLat([o.longitude, o.latitude]).setPopup(new lib.Popup({ offset: 25 }).setText('Point de livraison choisi (quartier parfois approximatif)')).addTo(map);
+        }).catch((error) => {
+          if (alive() && version === renderVersion) host.replaceChildren(alertBox(error.message, true));
+        });
+      } else {
+        host.replaceChildren(alertBox("Adresse de livraison indisponible pour cette commande.", true));
+      }
       if (TERMINAL.includes(o.status)) stop();
     } catch (e) {
       if (!alive()) return stop();
+      renderVersion++;
+      if (trackMap) { trackMap.remove(); trackMap = null; }
       setView(topbar(`Commande n°${id}`, { back: '#/orders' }), el('div', { class: 'pad' }, alertBox(e.message), el('button', { class: 'btn', type: 'button', onclick: () => route() }, 'Réessayer')));
       stop();
     }
@@ -1145,24 +1167,6 @@ async function renderSearch(alive) {
 // Carte « À emporter » : Google Maps si la clé navigateur est configurée, sinon plan stylisé
 // ---------------------------------------------------------------------
 
-let mapsLoading = null;
-let mapsAuthFailed = false;
-function loadGoogleMaps(key) {
-  if (window.google && window.google.maps && window.google.maps.importLibrary) return Promise.resolve();
-  if (mapsLoading) return mapsLoading;
-  mapsLoading = new Promise((resolve, reject) => {
-    const timer = setTimeout(() => { mapsLoading = null; reject(new Error('Google Maps ne répond pas : plan simplifié affiché.')); }, 15000);
-    window.__weMapsReady = () => { clearTimeout(timer); resolve(); };
-    window.gm_authFailure = () => { mapsAuthFailed = true; toast('Clé Google Maps refusée : plan simplifié affiché.', 'info'); if (location.hash.startsWith('#/map')) route(); };
-    const s = document.createElement('script');
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&v=weekly&loading=async&language=fr&region=BF&callback=__weMapsReady`;
-    s.async = true;
-    s.onerror = () => { clearTimeout(timer); mapsLoading = null; reject(new Error('Chargement de Google Maps impossible : plan simplifié affiché.')); };
-    document.head.append(s);
-  });
-  return mapsLoading;
-}
-
 function pinEl(it) {
   return el('button', { class: `mpin${it.kind === 'google' ? ' g' : ''}`, type: 'button', 'aria-label': `${it.name}, ${fmtKm(it.km)}` },
     el('span', { class: 'pi' }, I('store')), it.label ? el('span', { class: 'pl', text: it.label }) : null);
@@ -1174,27 +1178,17 @@ async function renderMap(alive) {
   chrome('nav', 'map');
   const wrap = el('div', { class: 'mapw' }, planSvg());
   const sheet = el('div', { class: 'msheet' }, el('div', { class: 'grab' }), el('div', { class: 'skel', style: 'height:70px' }));
-  const filters = { open: true, rating: false };
+  const filters = { open: false };
   setView(wrap);
   let list;
   try { list = await getRestaurants(origin); } catch (e) { if (alive()) { fill(sheet, alertBox(e.message)); wrap.append(sheet); } return; }
-  const useGoogle = Boolean(appConfig.google.maps_key) && !mapsAuthFailed;
-  // Conditions Google : les établissements Google ne s'affichent qu'avec le fond de carte Google.
-  const places = useGoogle && googleOn() ? await gNearby(origin).catch(() => []) : [];
   if (!alive()) return;
-  const all = [
-    ...list.filter((r) => Number.isFinite(r.latitude)).map((r) => ({
-      id: `r${r.id}`, kind: 'partner', lat: r.latitude, lng: r.longitude, km: r.distance_km, name: displayName(r.name), open: r.is_open && r.in_delivery_zone, rating: null,
+  const all = list.filter((r) => Number.isFinite(r.latitude) && Number.isFinite(r.longitude)).map((r) => ({
+      id: `r${r.id}`, kind: 'partner', lat: r.latitude, lng: r.longitude, km: r.distance_km, name: displayName(r.name), open: r.is_open, available: r.is_open && r.in_delivery_zone, rating: null,
       label: r.delivery_fee <= 400 ? fmtF(r.delivery_fee) : null, href: `#/r/${r.id}`, k: restoKey(r),
-      sub: `${r.prep_minutes}–${r.prep_minutes + 10} min · ${fmtKm(r.distance_km)} · Livraison ${fmtF(r.delivery_fee)}`,
-    })),
-    ...places.filter((p) => Number.isFinite(p.latitude)).map((p) => ({
-      id: `g${p.id}`, kind: 'google', lat: p.latitude, lng: p.longitude, km: p.distance_km ?? 99, name: p.name, open: p.open_now !== false, rating: p.rating,
-      label: null, href: `#/p/${encodeURIComponent(p.id)}`, k: placeKey(p), photo: p.photo,
-      sub: [p.rating ? `★ ${fmtRating(p.rating)}` : null, fmtKm(p.distance_km), 'Bientôt sur Winged Eats'].filter(Boolean).join(' · '),
-    })),
-  ].sort((a, b) => a.km - b.km);
-  const visible = () => all.filter((it) => (!filters.open || it.open) && (!filters.rating || (it.rating && it.rating >= 4.5)));
+      sub: `${r.prep_minutes}–${r.prep_minutes + 10} min · ${fmtKm(r.distance_km)} · ${r.in_delivery_zone ? `Livraison ${fmtF(r.delivery_fee)}` : 'Hors zone de livraison'}`,
+    })).sort((a, b) => a.km - b.km);
+  const visible = () => all.filter((it) => !filters.open || it.open);
   const pins = new Map();
   const markers = new Map();
   let gmap = null;
@@ -1203,10 +1197,10 @@ async function renderMap(alive) {
     const it = all.find((x) => x.id === selected) || visible()[0];
     fill(sheet, el('div', { class: 'grab' }), el('div', { class: 'h', style: 'margin-bottom:8px', text: 'À proximité' }),
       it ? el('a', { class: 'fl', href: it.href, style: 'gap:10px' },
-        el('div', { style: 'width:96px' }, F(it.k, 70, it.photo ? photoImg(it.photo, 240) : null)),
-        el('div', { style: 'flex:1' }, el('div', { class: 't', text: it.name }), el('div', { class: 'm', text: it.sub }), it.kind === 'partner' ? el('span', { class: 'save', text: it.open ? 'Commander maintenant' : 'Fermé' }) : el('span', { class: 'soonp', text: 'Pas encore partenaire' })),
+        el('div', { style: 'width:96px' }, F(it.k, 70)),
+        el('div', { style: 'flex:1' }, el('div', { class: 't', text: it.name }), el('div', { class: 'm', text: it.sub }), el('span', { class: 'save', text: it.available ? 'Voir le menu et commander' : 'Voir le menu' })),
         I('right')) : el('p', { class: 'm', text: 'Aucun restaurant avec ces filtres.' }),
-      places.length ? el('p', { class: 'gattr', style: 'padding:6px 0 0', text: 'Établissements et fond de carte : Google Maps' }) : null);
+    );
   };
   const select = (id) => {
     selected = id;
@@ -1227,30 +1221,36 @@ async function renderMap(alive) {
     el('div', { class: 'fl', style: 'gap:6px;margin-top:10px;flex-wrap:wrap' },
       chipToggle('Ouvert', 'open'),
       el('a', { class: 'chip', href: '#/offres', style: 'background:#fff' }, 'Prix', I('down')),
-      el('a', { class: 'chip', href: '#/search', style: 'background:#fff' }, 'Cuisine', I('down')),
-      chipToggle('Mieux notés', 'rating')));
-  if (useGoogle) {
-    try {
-      await loadGoogleMaps(appConfig.google.maps_key);
-      const { Map, Circle } = await google.maps.importLibrary('maps');
-      const { AdvancedMarkerElement } = await google.maps.importLibrary('marker');
-      if (!alive()) return;
-      const host = el('div', { class: 'gmap' });
-      fill(wrap, host, over, sheet);
-      const center = { lat: origin.latitude, lng: origin.longitude };
-      gmap = new Map(host, { center, zoom: 14, mapId: appConfig.google.map_id || 'DEMO_MAP_ID', disableDefaultUI: true, zoomControl: true, clickableIcons: false, gestureHandling: 'greedy' });
-      new Circle({ map: gmap, center, radius: 6000, clickable: false, strokeColor: '#E0362A', strokeOpacity: 0.45, strokeWeight: 1.5, fillColor: '#E0362A', fillOpacity: 0.03 });
-      new AdvancedMarkerElement({ map: gmap, position: center, content: el('div', { class: 'me gm' }, el('span', { class: 'pulse' }), el('i')) });
-      for (const it of all) {
-        const p = pinEl(it);
-        p.classList.add('gm');
-        p.addEventListener('click', () => select(it.id));
-        markers.set(it.id, new AdvancedMarkerElement({ map: gmap, position: { lat: it.lat, lng: it.lng }, content: p, title: it.name }));
-        pins.set(it.id, p);
-      }
-      applyFilters();
-      return;
-    } catch (e) { if (!alive()) return; toast(e.message, 'info'); }
+      el('a', { class: 'chip', href: '#/search', style: 'background:#fff' }, 'Cuisine', I('down'))));
+  try {
+    const host = el('div', { class: 'gmap' });
+    fill(wrap, host, over, sheet);
+    paintSheet();
+    const { map, lib } = await WEMap.create(host, [origin.longitude, origin.latitude]);
+    if (!alive()) { map.remove(); return; }
+    onCleanup(() => map.remove());
+    new lib.Marker({ color: '#d74331' }).setLngLat([origin.longitude, origin.latitude])
+      .setPopup(new lib.Popup({ offset: 25 }).setText('Adresse choisie')).addTo(map);
+    for (const it of all) {
+      const p = pinEl(it);
+      p.classList.add('gm');
+      p.addEventListener('click', () => select(it.id));
+      const marker = new lib.Marker({ element: p, anchor: 'bottom' }).setLngLat([it.lng, it.lat]);
+      pins.set(it.id, p);
+      markers.set(it.id, {
+        set map(value) {
+          if (value) { marker.addTo(map); p.setAttribute('aria-label', `${it.name}, ${fmtKm(it.km)}`); }
+          else marker.remove();
+        },
+        set zIndex(value) { p.style.zIndex = value || ''; },
+      });
+    }
+    gmap = map;
+    applyFilters();
+    return;
+  } catch (e) {
+    if (!alive()) return;
+    toast(e.message, 'info');
   }
   // Plan stylisé : repères positionnés d'après les coordonnées (partenaires uniquement).
   const partners = all.filter((it) => it.kind === 'partner');
@@ -1263,7 +1263,7 @@ async function renderMap(alive) {
     const scale = (Math.min(w, h) / 2 - 30) / radius;
     const kx = 111.32 * Math.cos((origin.latitude * Math.PI) / 180);
     fill(wrap, planSvg(), over, el('div', { class: 'me', style: `left:${cx}px;top:${cy}px` }, el('span', { class: 'pulse' }), el('i')),
-      el('div', { class: 'mnote', style: 'top:108px', text: "Plan simplifié · distances à vol d'oiseau" }), sheet);
+      el('div', { class: 'mnote', style: 'top:108px', text: "Carte indisponible · plan indicatif, non géographique" }), sheet);
     pins.clear();
     for (const it of partners) {
       const p = pinEl(it);
