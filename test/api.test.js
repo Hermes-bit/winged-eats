@@ -93,6 +93,8 @@ test('commande : les prix sont recalculés côté serveur', async () => {
   assert.equal(data.total, data.subtotal + data.delivery_fee);
   assert.equal(data.status, 'PENDING');
   assert.equal(data.pickup_code.length, 4);
+  assert.equal(data.latitude, ROSE_POINT.latitude);
+  assert.equal(data.longitude, ROSE_POINT.longitude);
   assert.equal(data.commission, undefined, 'la commission ne doit pas être visible du client');
 });
 
@@ -155,8 +157,11 @@ test('suivi client protégé par le numéro de téléphone', async () => {
 
   const ok = await call('GET', `/api/orders/${id}?phone=70123456`);
   assert.equal(ok.status, 200);
+  assert.equal(ok.data.latitude, ROSE_POINT.latitude);
+  assert.equal(ok.data.longitude, ROSE_POINT.longitude);
   const wrong = await call('GET', `/api/orders/${id}?phone=76000000`);
   assert.equal(wrong.status, 404);
+  assert.equal(wrong.data.latitude, undefined);
 });
 
 test('partenaire : authentification et cycle de statuts', async () => {

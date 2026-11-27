@@ -2,7 +2,7 @@
 
 Application de commande de repas et de livraison à Ouagadougou et Bobo-Dioulasso (Burkina Faso). Module restaurants en version MVP ; pharmacies de garde et mobilité sont prévues après validation.
 
-**Maquette en ligne** : https://hermes-bit.github.io/winged-eats/ (branche `gh-pages`, source : [maquettes/maquette-winged-eats.html](maquettes/maquette-winged-eats.html)). L'application reprend ce design.
+**Maquette d'origine en ligne** : https://hermes-bit.github.io/winged-eats/ (branche `gh-pages`, source : [maquettes/maquette-winged-eats.html](maquettes/maquette-winged-eats.html)). L'interface client reprend son identité et propose un accueil et des fiches restaurant au style actualisé.
 
 Dans l'application, les écrans suivants sont des **démonstrations**, clairement signalées :
 - paiement Orange Money et Moov Money ;
@@ -40,25 +40,33 @@ Au premier démarrage, la base de démonstration est créée et les **codes part
 ## Configuration
 Les tarifs et paramètres sont dans [server/config.js](server/config.js) : frais de livraison, rayon, commission par défaut, longueur du code de remise.
 
-### Restaurants réels et carte Google (facultatif)
+### Carte et restaurants réels
+
+L'onglet « À emporter » utilise MapLibre et le style Liberty d'OpenFreeMap pour afficher les restaurants partenaires ; touchez un repère puis sa fiche pour consulter le menu. Il affiche aussi jusqu'à 100 restaurants, cafés et établissements de restauration OpenStreetMap dans un rayon de 8 km autour du centre de la ville choisie. Ces établissements sont des fiches informatives non partenaires : leurs menus et la commande ne sont pas disponibles. Le filtre « Ouvert » ne les inclut pas car leurs horaires ne sont pas évalués. L'accès au fond de carte et aux données nécessite une connexion internet. Si la carte ne charge pas, un plan indicatif est affiché ; une erreur de recherche OpenStreetMap est signalée.
+
+La recherche OpenStreetMap passe par Overpass et n'envoie que le centre public de la ville, pas les coordonnées de l'utilisateur. Lorsqu'un établissement porte une référence directe à un fichier Wikimedia Commons, sa photo peut être affichée avec son auteur et sa licence Creative Commons, sous réserve que ces informations soient disponibles. Sinon une illustration est utilisée. Les données OSM sont attribuées aux contributeurs OpenStreetMap et soumises à l'ODbL.
+
+Le suivi de commande affiche l'adresse enregistrée à la commande, pas une position de livreur : le suivi GPS en direct n'est pas encore disponible. Le fond de carte est fourni par OpenFreeMap et les données cartographiques par OpenStreetMap ; des requêtes sont envoyées à ces services lors de l'affichage.
+
+### Restaurants réels Google (facultatif)
 Les clés se collent dans le fichier **`.env`** à la racine du projet. Il n'est jamais versionné ; le modèle est `.env.example`.
 ```
 GOOGLE_PLACES_API_KEY=...     # clé serveur : Places API (New)
-GOOGLE_MAPS_BROWSER_KEY=...   # clé navigateur : Maps JavaScript API (fond de carte)
+GOOGLE_MAPS_BROWSER_KEY=...   # conservée pour compatibilité, non utilisée pour la carte client
 ```
 Redémarrez `npm start` après chaque modification.
 
 Dans Google Cloud :
-- activez « Places API (New) » et « Maps JavaScript API » ;
+- activez « Places API (New) » ;
 - liez un **compte de facturation** au projet. Sans facturation, Google renvoie les restaurants sans leurs photos ni leurs avis ;
-- restreignez la clé navigateur à Maps JavaScript API et au domaine du site.
+- restreignez la clé serveur à Places API (New).
 
 Fonctionnement :
 - Les restaurants de Ouagadougou sont demandés **en direct** à Google : populaires autour de l'adresse, par catégorie, ou par recherche. Rien n'est enregistré en base, conformément aux conditions de Google Maps Platform. C'est pourquoi photos, notes et horaires restent toujours à jour.
 - Ils sont classés dans des catégories façon plateforme de livraison : Maquis, Grillades, Africaine, Fast-food, Pizza, Chawarma, Asiatique, Européenne, Café, Boulangerie, Desserts.
 - Ce sont des fiches vitrines (appeler, itinéraire) avec la mention « Bientôt sur Winged Eats ». Seuls les restaurants partenaires sont commandables.
 - Chaque affichage consomme des appels facturés au-delà du quota gratuit de Google. Deux plafonds protègent la facture : `GOOGLE_MAX_CALLS_PER_MINUTE` et `GOOGLE_MAX_CALLS_PER_DAY`.
-- Sans clé, l'application fonctionne avec ses seules données et un plan simplifié.
+- Les établissements Google restent accessibles dans la recherche et les listes, mais ne sont pas affichés sur le fond OpenFreeMap. Sans clé Google, l'application fonctionne avec ses seules données partenaires.
 
 ## Limites actuelles
 - Paiement en espèces uniquement.

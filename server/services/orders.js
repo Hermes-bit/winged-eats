@@ -48,6 +48,8 @@ function formatOrder(db, row, { internal = false } = {}) {
     restaurant_id: row.restaurant_id,
     status: row.status,
     customer_name: row.customer_name,
+    latitude: row.latitude,
+    longitude: row.longitude,
     repere: row.repere,
     note: row.note,
     distance_km: row.distance_km,

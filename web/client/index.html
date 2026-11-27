@@ -3,15 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#E0362A">
+<meta name="theme-color" content="#D74331">
 <title>Winged Eats</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%23F6B21B'/%3E%3Cpath d='M10 38c8-15 24-25 44-26-7 4-12 8-15 12 7-3 13-3 18-2-8 4-14 8-17 13 5-1 10 0 13 3-12 5-27 8-36 6-4-1-7-3-7-6z' fill='%23E0362A'/%3E%3Ccircle cx='17' cy='45' r='3.2' fill='%232A1712'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-/* Winged Eats · application client. Design repris de maquettes/maquette-winged-eats.html :
-   rouge Faso #E0362A, latérite #22150F pour l'encre, or #F6B21B, Unbounded (marque, titres) et Inter (interface). */
-:root{--red:#E0362A;--red2:#B8231A;--gold:#F6B21B;--ink:#22150F;--ink2:#2A1712;--mute:#7D6A61;--chip:#F4ECE4;--line:#F3EAE1;--line2:#EADFD4;--sand:#FBF3E8;--soft:#FBF5EF;--green:#1E8A4C;--nav:70px}
+/* Winged Eats · palette chaleureuse et typographie éditoriale. */
+:root{--red:#D74331;--red2:#A93628;--gold:#E8B654;--ink:#30231D;--ink2:#30231D;--mute:#786A60;--chip:#F4F0E9;--line:#F0EAE2;--line2:#E5DBCF;--sand:#F4EFE6;--soft:#F8F4ED;--green:#1E7544;--nav:70px}
 *{box-sizing:border-box;min-width:0;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
 html,body{margin:0}
@@ -266,7 +265,53 @@ body.nonav .toasts,body.bare .toasts{bottom:96px}
 .hours{list-style:none;margin:0;padding:0}
 .hours li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
 .hours li:last-child{border-bottom:0}
+
+/* Identité visuelle client */
+#app,.nb,.tabsw,.bsheet,.foot{background:#FFFDFA}
+.topbar{background:#fffdfaee}
+.h,.rname,.msec h3,.bigt{font-family:Georgia,serif;font-weight:400;letter-spacing:-.03em}
+.h{font-size:21px}.rname{font-size:27px}.msec h3{font-size:21px}
+.btn,.chip,.ft,.pm,.field input,.field textarea,.inp{border-radius:14px}
+.chip.on{background:var(--ink);color:#fff}
+.sec{padding-top:22px}
+.home-intro{padding-top:19px}
+.home-intro h1{font:400 30px/1.1 Georgia,serif;letter-spacing:-.035em;margin:0 0 7px}
+.home-intro h1 em{color:var(--red);font-weight:400}
+.home-intro p{margin:0}
+.home-search{display:flex;align-items:center;gap:10px;height:46px;margin-top:16px;padding:0 14px;background:var(--chip);border:1px solid var(--line);border-radius:14px;color:var(--mute);font-size:13px}
+.addr .m{font-size:10px;text-transform:uppercase;letter-spacing:.1em;font-weight:800}
+.addr .t{margin-top:3px}
+.addr .t:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--red);flex:none}
+.banner{min-height:145px;background:#A93628;border-radius:20px;padding:18px;isolation:isolate}
+.banner:before{content:"";position:absolute;right:-20px;top:-35px;width:180px;height:180px;border:1px solid #ffffff30;border-radius:50%;z-index:-1}
+.banner-copy{position:relative;z-index:1;flex:1;max-width:65%}
+.banner-label{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:800;color:#FFDBA8}
+.banner .bt{font:400 24px/1.05 Georgia,serif;letter-spacing:-.02em;margin-top:8px}
+.banner .bs{font-size:11px;line-height:1.35;color:#FFE5DC;margin:7px 0 10px}
+.banner .chip{font-size:11px;padding:7px 11px;background:#F3C765}
+.banner .chip .ic{width:13px;height:13px}
+.banner-art{position:absolute;right:-14px;bottom:-16px;width:47%;height:130px;transform:rotate(-12deg);filter:drop-shadow(0 7px 8px #50251e66)}
+.banner-art svg{width:100%;height:100%}
+.cats{gap:8px;padding:0 16px 4px}
+.cat{flex-basis:76px;background:#F6F1E9;border-radius:14px;padding:8px 4px;gap:5px}
+.cat .ft{width:50px;height:50px;border-radius:12px}
+.cat.on{background:#FBE9DF;box-shadow:inset 0 0 0 1px #E8B5A2}
+.cat.on .ft{box-shadow:none}
+.hs{grid-auto-columns:48%}
+.rc .ft{height:120px;border-radius:16px}
+.rc .t{margin-top:8px}
+.k-riz{background:#E8C99E}.k-bro{background:#E9C0A8}.k-pou{background:#EBD0A2}.k-to{background:#D9DDBC}.k-piz{background:#EAC6B3}.k-bur{background:#E9CEA9}.k-bis{background:#E9CDD2}.k-poi{background:#D2E0DD}
+.nb{border-color:var(--line)}
+.circ.on{color:var(--red)}.circ.on .ic{fill:currentColor}
+.hero,.hero .ft,.gal,.gal .ft{height:210px}
+.restaurant-intro{padding-top:18px}
+.kp2>div{background:var(--soft)}
+.mrow{padding-top:14px;padding-bottom:14px}
+.mrow .ftw{width:90px}
+.mrow .ftw .ft{border-radius:14px}
+@media(max-width:350px){.banner-copy{max-width:70%}.banner .bt{font-size:21px}.hs{grid-auto-columns:58%}}
 </style>
+<link rel="stylesheet" href="refinement.css?v=5">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -305,6 +350,7 @@ body.nonav .toasts,body.bare .toasts{bottom:96px}
 <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
 <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></symbol>
 <!-- plats -->
+<symbol id="f-meal" viewBox="0 0 300 180"><ellipse cx="153" cy="96" rx="112" ry="76" fill="#b78357" opacity=".22"/><ellipse cx="148" cy="88" rx="107" ry="75" fill="#f9f2df"/><ellipse cx="148" cy="87" rx="94" ry="64" fill="#fffdf3"/><path d="M75 100c-6-29 12-55 43-60 25-4 43 12 50 35 6 22-4 47-27 53-30 8-59-2-66-28z" fill="#e4a941"/><g fill="#f5cb6b"><ellipse cx="98" cy="72" rx="7" ry="3" transform="rotate(-25 98 72)"/><ellipse cx="120" cy="58" rx="7" ry="3"/><ellipse cx="144" cy="76" rx="7" ry="3" transform="rotate(30 144 76)"/><ellipse cx="105" cy="103" rx="8" ry="3"/><ellipse cx="137" cy="106" rx="8" ry="3" transform="rotate(-25 137 106)"/><ellipse cx="85" cy="91" rx="5" ry="3"/><ellipse cx="121" cy="82" rx="6" ry="3" transform="rotate(-30 121 82)"/></g><path d="M151 94c-8-17 1-39 21-45 19-6 39 4 43 20 4 15-6 28-22 33l-8 12c-4 7-14 3-13-4l1-8c-10 1-18-1-22-8z" fill="#a84a26"/><path d="M155 78c3-17 21-27 37-22 8 2 13 7 15 13-12-5-25-3-32 6-7 8-13 9-20 8z" fill="#d77b36"/><path d="M180 104l12 10" stroke="#f4d0a6" stroke-width="8" stroke-linecap="round"/><circle cx="194" cy="116" r="5" fill="#f4d0a6"/><g fill="#72934a"><path d="M190 125q7-20 19-17-1 14-19 17z"/><path d="M195 126q15-13 23-5-7 9-23 5z"/><path d="M62 65q3-15 16-17-1 12-16 17z"/></g><circle cx="222" cy="90" r="10" fill="#d65c3b"/><circle cx="222" cy="90" r="6" fill="#f09367"/><circle cx="65" cy="111" r="9" fill="#d65c3b"/><circle cx="65" cy="111" r="5" fill="#f09367"/></symbol>
 <symbol id="f-riz" viewBox="0 0 100 100"><ellipse cx="50" cy="70" rx="44" ry="16" fill="#2a171222"/><ellipse cx="50" cy="66" rx="44" ry="16" fill="#fff"/><ellipse cx="50" cy="64" rx="34" ry="11" fill="#F2E6D6"/><path d="M20 64Q50 18 80 64z" fill="#D7802A"/><path d="M30 56Q50 30 64 44" stroke="#F0A64B" stroke-width="5" fill="none" stroke-linecap="round"/><g fill="#F7C873"><circle cx="40" cy="50" r="2"/><circle cx="50" cy="42" r="2"/><circle cx="58" cy="54" r="2"/><circle cx="46" cy="58" r="2"/></g><rect x="56" y="40" width="14" height="12" rx="4" fill="#7A3B1D"/><circle cx="34" cy="60" r="6" fill="#E23B2E"/><circle cx="34" cy="60" r="3" fill="#F7826F"/><circle cx="70" cy="58" r="3" fill="#4A9B3C"/><circle cx="64" cy="61" r="2.4" fill="#4A9B3C"/></symbol>
 <symbol id="f-bro" viewBox="0 0 100 100"><g transform="rotate(-18 50 50)"><g id="sk"><path d="M6 40h88" stroke="#C9A46A" stroke-width="3" stroke-linecap="round"/><rect x="16" y="32" width="14" height="16" rx="4" fill="#8A4A24"/><rect x="32" y="34" width="6" height="12" rx="2" fill="#F3E0C0"/><rect x="40" y="32" width="14" height="16" rx="4" fill="#7A3B1D"/><rect x="56" y="33" width="7" height="14" rx="2" fill="#4A9B3C"/><rect x="65" y="32" width="14" height="16" rx="4" fill="#8A4A24"/><path d="M18 36h10M42 36h10M67 36h10" stroke="#B5703F" stroke-width="2"/></g><use href="#sk" y="24" x="-4"/></g><ellipse cx="50" cy="88" rx="38" ry="5" fill="#2a171222"/></symbol>
 <symbol id="f-pou" viewBox="0 0 100 100"><ellipse cx="50" cy="74" rx="44" ry="14" fill="#fff"/><ellipse cx="50" cy="72" rx="34" ry="9" fill="#F2E6D6"/><g transform="rotate(-25 40 50)"><rect x="50" y="46" width="22" height="7" rx="3.5" fill="#F7EBDD"/><circle cx="73" cy="46" r="5" fill="#F7EBDD"/><circle cx="73" cy="53" r="5" fill="#F7EBDD"/><ellipse cx="36" cy="50" rx="20" ry="15" fill="#B9621F"/><ellipse cx="32" cy="45" rx="11" ry="6" fill="#DA8A3A"/></g><g transform="rotate(20 62 60)"><ellipse cx="62" cy="60" rx="16" ry="11" fill="#A9541A"/><ellipse cx="58" cy="56" rx="8" ry="4" fill="#D98536"/></g><path d="M22 66a10 10 0 0 1 16 0z" fill="#9BC53D"/><circle cx="76" cy="68" r="3" fill="#E23B2E"/></symbol>
@@ -327,6 +373,8 @@ body.nonav .toasts,body.bare .toasts{bottom:96px}
 </nav>
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
+<script src="open-map.js"></script>
+<script src="osm-places.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
