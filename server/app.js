@@ -24,6 +24,7 @@ function createApp(db, options = {}) {
   app.use('/api', publicRoutes);
 
   const webRoot = path.join(__dirname, '..', 'web');
+  app.get('/', (req, res) => res.redirect('/client/'));
   app.use('/client', express.static(path.join(webRoot, 'client')));
   app.use('/partner', express.static(path.join(webRoot, 'partner')));
 

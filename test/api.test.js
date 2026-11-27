@@ -53,6 +53,15 @@ function findItem(menu, name) {
 
 const customer = { customer_name: 'Aminata', customer_phone: '70 12 34 56', repere: 'Portail bleu', ...ROSE_POINT };
 
+test("l'adresse principale ouvre l'application client", async () => {
+  const redirect = await fetch(base + '/', { redirect: 'manual' });
+  assert.equal(redirect.status, 302);
+  assert.equal(redirect.headers.get('location'), '/client/');
+  const client = await fetch(base + '/');
+  assert.equal(client.status, 200);
+  assert.match(await client.text(), /<title>Winged Eats<\/title>/);
+});
+
 test('calcul de distance et frais de livraison', () => {
   assert.equal(distanceKm(12.3, -1.5, 12.3, -1.5), 0);
   const km = distanceKm(12.0, -1.0, 12.1, -1.0);
