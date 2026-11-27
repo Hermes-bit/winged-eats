@@ -6,6 +6,8 @@ Référence visuelle : les vidéos de [proposual](../proposual) montrent des app
 
 ## 1. Charte graphique (Burkina Faso)
 
+Le parcours client utilise désormais le rouge, l'or et l'encre de la maquette Winged Eats, avec une typographie système, une navigation translucide et des mouvements réduits selon les préférences du navigateur. Les illustrations locales restent utilisables sans photos ni polices externes.
+
 | Rôle | Couleur | Hex | Usage |
 |---|---|---|---|
 | Principal | Vert Faso | `#0B7A3E` | Boutons, barre de navigation, état actif |

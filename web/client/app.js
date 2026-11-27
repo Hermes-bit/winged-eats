@@ -84,6 +84,7 @@ const fmtCFA = (n) => `${num(n)}${NBSP}FCFA`;
 const fmtKm = (km) => (km === null || km === undefined ? '' : km < 0.5 ? `< 500${NBSP}m` : `${String(Math.round(km * 10) / 10).replace('.', ',')}${NBSP}km`);
 const fmtRating = (n) => String(Math.round(n * 10) / 10).replace('.', ',');
 const plural = (n, w) => `${n} ${w}${n > 1 ? 's' : ''}`;
+const scrollBehavior = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
 const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const displayName = (name) => String(name || '').replace(/\s*\(démo\)\s*$/i, '');
 const isDemo = (name) => /\(démo\)\s*$/i.test(String(name || ''));
@@ -273,7 +274,7 @@ function goBack(fallback) { if (navCount > 0) history.back(); else location.hash
 function sec(title, sub, scroller) {
   return el('div', { class: 'sec' },
     el('div', null, el('h2', { class: 'h', text: title }), sub ? el('span', { class: 'm', text: sub }) : null),
-    scroller ? el('button', { class: 'arr', type: 'button', 'aria-label': 'Voir la suite', onclick: () => scroller.scrollBy({ left: scroller.clientWidth * 0.62, behavior: 'smooth' }) }, I('right')) : null);
+    scroller ? el('button', { class: 'arr', type: 'button', 'aria-label': 'Voir la suite', onclick: () => scroller.scrollBy({ left: scroller.clientWidth * 0.62, behavior: scrollBehavior() }) }, I('right')) : null);
 }
 
 function emptyState(k, title, text, ...actions) {
@@ -465,7 +466,7 @@ function homeView(list, origin, redraw) {
   const shown = filterPartners(list);
   const reset = () => { homeState.category = null; homeState.filters.clear(); redraw(); };
   const toggleFilter = (k) => { if (homeState.filters.has(k)) homeState.filters.delete(k); else homeState.filters.add(k); redraw(); };
-  const toPartners = () => document.getElementById('partners')?.scrollIntoView({ behavior: 'smooth' });
+  const toPartners = () => document.getElementById('partners')?.scrollIntoView({ behavior: scrollBehavior() });
   const sortSheet = () => openSheet((close) => [
     el('div', { class: 'grab' }), el('h2', { text: 'Trier par' }),
     SORTS.map(([k, l]) => el('button', { class: homeState.sort === k ? 'pm on' : 'pm', type: 'button', style: 'margin-top:8px', onclick: () => { homeState.sort = k; close(); redraw(); } }, el('b', { text: l }), el('span', { class: 'rd' }))),
@@ -479,6 +480,11 @@ function homeView(list, origin, redraw) {
       el('button', { class: 'addr', type: 'button', onclick: () => zoneSheet(origin.city || 'ouaga'), 'aria-label': `Adresse : ${origin.label}. Modifier` },
         el('div', { class: 'm', text: 'Livrer à' }), el('div', { class: 't' }, `${origin.label}, ${city.name}`, I('down'))),
       el('a', { class: 'circ', href: '#/orders', 'aria-label': 'Mes commandes' }, I('bell'), hasOrders ? el('i', { class: 'dot' }) : null)),
+    el('div', { class: 'pad', style: 'margin-top:14px' },
+      el('div', { class: 'home-heading' },
+        el('h1', { text: 'Une envie, un bon repas.' }),
+        el('p', { text: 'Les saveurs de votre quartier, à portée de main.' })),
+      el('a', { class: 'home-search', href: '#/search' }, I('search'), el('span', { text: 'Rechercher un plat ou un restaurant' }))),
     el('div', { class: 'chips', style: 'margin-top:12px' },
       el('button', { class: !homeState.category ? 'chip on' : 'chip', type: 'button', onclick: reset }, 'Tout'),
       el('button', { class: 'chip', type: 'button', onclick: toPartners }, 'Restaurants'),
@@ -679,13 +685,14 @@ function paintCartBar(rid) {
 }
 
 async function renderRestaurant(id, alive) {
+  const origin = store.get('we_origin', null);
+  if (!origin) return renderLogin('Choisissez une adresse de livraison avant de commander.');
   chrome('nonav');
   setView(el('div', { class: 'skel', style: 'height:190px;border-radius:0' }), el('div', { class: 'pad' }, el('div', { class: 'skel', style: 'height:26px;width:60%;margin-top:30px' }), el('div', { class: 'skel', style: 'height:70px;margin-top:16px' })));
-  const origin = store.get('we_origin', null);
   let menu;
   let info = null;
   try {
-    [menu, info] = await Promise.all([api(`/restaurants/${id}`), origin ? getRestaurants(origin).then((l) => l.find((r) => r.id === id) || null).catch(() => null) : null]);
+    [menu, info] = await Promise.all([api(`/restaurants/${id}`), getRestaurants(origin).then((l) => l.find((r) => r.id === id) || null)]);
   } catch (e) {
     if (!alive()) return;
     return setView(topbar('Restaurant'), el('div', { class: 'pad' }, alertBox(e.message), el('button', { class: 'btn', type: 'button', onclick: () => route() }, 'Réessayer')));
@@ -693,7 +700,7 @@ async function renderRestaurant(id, alive) {
   if (!alive()) return;
   putMenu(menu);
   const name = displayName(menu.name);
-  const tabs = menu.categories.map((c, i) => el('button', { class: i === 0 ? 'chip on' : 'chip', type: 'button', 'data-t': `c${c.id}`, onclick: () => document.getElementById(`c${c.id}`).scrollIntoView({ behavior: 'smooth' }) }, c.name));
+  const tabs = menu.categories.map((c, i) => el('button', { class: i === 0 ? 'chip on' : 'chip', type: 'button', 'data-t': `c${c.id}`, onclick: () => document.getElementById(`c${c.id}`).scrollIntoView({ behavior: scrollBehavior() }) }, c.name));
   cartBarSlot = el('div');
   setView(
     el('div', { class: 'hero' }, F(restoKey(menu), 190),
@@ -706,12 +713,12 @@ async function renderRestaurant(id, alive) {
         el('div', null, el('b', { text: `${menu.prep_minutes}–${menu.prep_minutes + 10} min` }), el('span', { class: 'm', text: info ? `Livraison ${fmtF(info.delivery_fee)} · ${fmtKm(info.distance_km)}` : 'Livraison selon distance' })),
         el('div', null, el('b', { style: `color:${menu.is_open ? 'var(--green)' : 'var(--red2)'}`, text: menu.is_open ? 'Ouvert' : 'Fermé' }), el('span', { class: 'm', text: menu.opening_hours || 'Horaires non renseignés' }))),
       !menu.is_open ? alertBox('Restaurant fermé : vous pouvez consulter le menu, mais pas commander.') : null,
-      info && !info.in_delivery_zone ? alertBox(`Hors zone de livraison (${fmtKm(info.distance_km)}). Changez d'adresse pour commander.`) : null),
+      !info ? alertBox("La disponibilité pour cette adresse ne peut pas être vérifiée.") : !info.in_delivery_zone ? alertBox(`Hors zone de livraison (${fmtKm(info.distance_km)}). Changez d'adresse pour commander.`) : null),
     el('div', { class: 'tabsw' }, el('div', { class: 'chips' }, tabs)),
     menu.categories.map((c) => el('section', { id: `c${c.id}`, class: 'msec' },
       el('h3', { text: c.name }),
       c.items.map((item) => {
-        const can = item.available && menu.is_open;
+        const can = item.available && menu.is_open && info && info.in_delivery_zone;
         return el('button', { class: 'mrow', type: 'button', disabled: !can, onclick: () => openItem(item, menu, () => paintCartBar(menu.id)) },
           el('div', { class: 'grow' },
             el('div', { class: 't', text: item.name }),
@@ -767,6 +774,7 @@ function renderCart(alive) {
   let fee = null;
   let blocked = null;
   let tip = 0;
+  let submitting = false;
   const lines = el('div');
   const tot = el('div', { style: 'margin-top:12px' });
   const errorSlot = el('div');
@@ -786,16 +794,20 @@ function renderCart(alive) {
     const s = subtotal();
     const total = fee ? s + fee.delivery_fee : null;
     fill(tot,
-      el('div', { class: 'm' }, `Articles ${fmtF(s)} · Livraison ${fee ? fmtF(fee.delivery_fee) : '…'}${tip ? ` · Pourboire ${fmtF(tip)} (en espèces au livreur)` : ''}`),
-      el('div', { class: 'lr', style: 'font-weight:800;font-size:15px' }, el('span', { text: 'Total' }), el('span', { text: total === null ? '…' : fmtCFA(total + tip) })));
-    submit.disabled = Boolean(blocked);
-    submit.textContent = total === null ? 'Commander' : `Commander · ${fmtF(total + tip)} en espèces`;
+      el('div', { class: 'lr' }, el('span', { text: 'Articles' }), el('span', { text: fmtF(s) })),
+      el('div', { class: 'lr' }, el('span', { text: 'Livraison estimée' }), el('span', { text: fee ? fmtF(fee.delivery_fee) : 'À vérifier' })),
+      el('div', { class: 'lr', style: 'font-weight:800;font-size:15px' }, el('span', { text: 'Total de la commande' }), el('span', { text: total === null ? 'À vérifier' : fmtCFA(total) })),
+      tip ? el('div', { class: 'm', text: `Pourboire séparé : ${fmtF(tip)} en espèces au livreur` }) : null,
+      el('div', { class: 'hint', text: 'Les prix et les frais sont recalculés à la commande.' }));
+    submit.disabled = submitting || !fee || Boolean(blocked);
+    submit.textContent = submitting ? 'Envoi de la commande…' : blocked ? 'Commande indisponible' : total === null ? 'Vérification de la livraison…' : `Commander · ${fmtF(total)} en espèces`;
   }
 
   const profile = store.get('we_profile', {});
   const form = el('form', {
     onsubmit: async (e) => {
       e.preventDefault();
+      if (submitting || !fee || blocked) return;
       const f = e.target.elements;
       const body = {
         restaurant_id: cart.restaurant_id, customer_name: f.name.value, customer_phone: f.phone.value, repere: f.repere.value,
@@ -803,8 +815,8 @@ function renderCart(alive) {
         latitude: origin.latitude, longitude: origin.longitude,
         items: cart.lines.map((l) => ({ item_id: l.item_id, quantity: l.quantity, option_ids: l.option_ids })),
       };
-      submit.disabled = true;
-      submit.textContent = 'Envoi de la commande…';
+      submitting = true;
+      paint();
       try {
         const order = await api('/orders', { method: 'POST', body });
         const phones = store.get('we_orders', {}); phones[order.id] = body.customer_phone; store.set('we_orders', phones);
@@ -815,7 +827,8 @@ function renderCart(alive) {
         location.hash = `#/order/${order.id}`;
       } catch (err) {
         fill(errorSlot, alertBox(err.message));
-        errorSlot.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        errorSlot.scrollIntoView({ behavior: scrollBehavior(), block: 'center' });
+        submitting = false;
         paint();
       }
     },
@@ -843,16 +856,26 @@ function renderCart(alive) {
     el('div', { style: 'position:fixed;z-index:35;left:50%;transform:translateX(-50%);width:min(480px,100%);bottom:0;padding:12px 16px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(#fff0,#fff 30%)' }, submit));
   setView(topbar('Paiement', { back: `#/r/${cart.restaurant_id}` }), el('div', { class: 'pad' }, form));
   paint();
-  getRestaurants(origin).then((list) => {
-    if (!alive()) return;
-    const r = list.find((x) => x.id === cart.restaurant_id);
-    if (!r) return;
-    fee = r;
-    if (!r.in_delivery_zone) blocked = `Hors zone de livraison (${fmtKm(r.distance_km)}). Changez d'adresse.`;
-    else if (!r.is_open) blocked = 'Ce restaurant est fermé. Commande impossible.';
-    if (blocked) fill(errorSlot, alertBox(blocked));
-    paint();
-  }).catch((e) => { if (alive()) fill(errorSlot, alertBox(e.message)); });
+  const loadFee = () => {
+    fill(errorSlot);
+    getRestaurants(origin).then((list) => {
+      if (!alive()) return;
+      const r = list.find((x) => x.id === cart.restaurant_id);
+      if (!r) blocked = "Ce restaurant n'est plus disponible.";
+      else {
+        if (!r.in_delivery_zone) blocked = `Hors zone de livraison (${fmtKm(r.distance_km)}). Changez d'adresse.`;
+        else if (!r.is_open) blocked = 'Ce restaurant est fermé. Commande impossible.';
+        else fee = r;
+      }
+      if (blocked) fill(errorSlot, alertBox(blocked));
+      paint();
+    }).catch((e) => {
+      if (!alive()) return;
+      fill(errorSlot, alertBox(e.message), el('button', { class: 'btn lt', type: 'button', onclick: loadFee }, 'Réessayer la vérification'));
+      paint();
+    });
+  };
+  loadFee();
 }
 
 // ---------------------------------------------------------------------
@@ -1032,22 +1055,22 @@ async function renderSearch(alive) {
   let gQuery = '';
   const scheduleGoogle = (q) => {
     if (!googleOn()) return;
+    if (q && q === gQuery) return;
     clearTimeout(gTimer);
     if (q.length < 3) { gQuery = ''; fill(gSlot); return; }
-    if (q === gQuery) return;
+    gQuery = q;
     fill(gSlot, el('div', { class: 't pad', style: 'margin:16px 0 6px' }, 'Sur Google Maps'), el('div', { class: 'pad' }, el('div', { class: 'skel', style: 'height:50px' })));
     gTimer = setTimeout(async () => {
-      gQuery = q;
       try {
         const places = await gSearch(origin, q);
-        if (!alive() || gQuery !== q) return;
+        if (!alive() || gQuery !== q || input.value.trim() !== q) return;
         fill(gSlot, el('div', { class: 't pad', style: 'margin:16px 0 2px' }, `Sur Google Maps · ${places.length}`),
           el('div', { class: 'list' }, places.map((p) => el('a', { href: `#/p/${encodeURIComponent(p.id)}`, onclick: () => rememberSearch(q) },
             el('div', { style: 'width:40px' }, F(placeKey(p), 40, photoImg(p.photo, 120))),
             el('span', { class: 'grow' }, el('div', null, highlight(p.name, q)), el('div', { class: 'm', text: [p.category !== 'restaurant' ? catInfo(p.category).label : (p.type_label || 'Restaurant'), fmtKm(p.distance_km), 'Bientôt sur Winged Eats'].filter(Boolean).join(' · ') })),
             I('right')))),
           places.length ? googleCredit() : el('p', { class: 'm pad', text: 'Aucun établissement trouvé.' }));
-      } catch (e) { if (alive() && gQuery === q) fill(gSlot, el('div', { class: 'pad' }, alertBox(e.message, true))); }
+      } catch (e) { if (alive() && gQuery === q && input.value.trim() === q) fill(gSlot, el('div', { class: 'pad' }, alertBox(e.message, true))); }
     }, 650);
   };
   onCleanup(() => clearTimeout(gTimer));
@@ -1056,6 +1079,7 @@ async function renderSearch(alive) {
     searchQuery = input.value;
     clear.hidden = !input.value;
     if (!q) {
+      scheduleGoogle('');
       const recent = store.get('we_recent', []);
       const chips = recent.length ? recent : RECENT_IDEAS;
       fill(body,
@@ -1089,6 +1113,7 @@ async function renderSearch(alive) {
       googleOn() ? gSlot : null);
   };
   let deb = null;
+  onCleanup(() => clearTimeout(deb));
   input.addEventListener('input', () => { clearTimeout(deb); deb = setTimeout(draw, 120); });
   clear.addEventListener('click', () => { input.value = ''; draw(); input.focus(); });
   draw();

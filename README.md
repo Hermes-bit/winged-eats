@@ -62,6 +62,7 @@ Fonctionnement :
 
 ## Limites actuelles
 - Paiement en espèces uniquement.
+- Les frais affichés dans le panier sont estimés ; le serveur recalcule les prix et la livraison au moment de la commande. Le pourboire est facultatif et remis séparément en espèces.
 - Distance à vol d'oiseau (pas d'itinéraire routier).
 - Authentification partenaire par code (pas de comptes utilisateurs).
 - Restaurants commandables : uniquement les partenaires de la base (démo pour l'instant). Il manque encore un outil d'inscription des restaurants partenaires (menu, code).
