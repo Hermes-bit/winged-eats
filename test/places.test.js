@@ -150,3 +150,26 @@ test('sans clé Google : réponse 503 explicite', async () => {
   assert.equal(cfg.google.places, false);
   off.close();
 });
+
+test('refus Google : seul le code diagnostique valide est transmis', async () => {
+  const service = createPlacesService(GOOGLE, {
+    fetchImpl: async () => ({
+      ok: false, status: 403,
+      json: async () => ({
+        error: {
+          message: 'Permission denied on the service.',
+          details: [{
+            '@type': 'type.googleapis.com/google.rpc.ErrorInfo',
+            reason: 'API_KEY_SERVICE_BLOCKED',
+            metadata: { credential: 'secret-a-ne-pas-afficher' },
+          }],
+        },
+      }),
+    }),
+  });
+  await assert.rejects(service.nearby(ORIGIN), (err) => {
+    assert.match(err.message, /code Google : API_KEY_SERVICE_BLOCKED/);
+    assert.doesNotMatch(err.message, /secret-a-ne-pas-afficher/);
+    return true;
+  });
+});

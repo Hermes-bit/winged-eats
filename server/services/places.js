@@ -148,9 +148,15 @@ function createPlacesService(google, { fetchImpl = globalThis.fetch } = {}) {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       const detail = data?.error?.message || `HTTP ${res.status}`;
-      console.error(`[google-places] ${method} ${path.split('?')[0]} → ${res.status} ${detail}`);
+      const errorInfo = Array.isArray(data?.error?.details)
+        ? data.error.details.find((entry) => entry?.['@type'] === 'type.googleapis.com/google.rpc.ErrorInfo')
+        : null;
+      const reason = errorInfo?.reason;
+      const code = typeof reason === 'string' && /^[A-Z][A-Z0-9_]{0,79}$/.test(reason) ? reason : null;
+      const diagnostic = code ? ` [code Google : ${code}]` : '';
+      console.error(`[google-places] ${method} ${path.split('?')[0]} → ${res.status} ${detail}${diagnostic}`);
       if (res.status === 404) throw new ApiError(404, 'Établissement introuvable sur Google');
-      throw new ApiError(502, `Google Places a refusé la requête : ${detail}`);
+      throw new ApiError(502, `Google Places a refusé la requête : ${detail}${diagnostic}`);
     }
     return data;
   }
