@@ -1139,8 +1139,16 @@ async function renderSearch(alive) {
 // ---------------------------------------------------------------------
 
 function pinEl(it) {
-  return el('button', { class: `mpin${it.kind === 'google' ? ' g' : ''}`, type: 'button', 'aria-label': `${it.name}, ${fmtKm(it.km)}` },
+  return el('button', { class: `mpin${it.kind === 'osm' ? ' g' : ''}`, type: 'button', 'aria-label': `${it.name}, ${fmtKm(it.km)}` },
     el('span', { class: 'pi' }, I('store')), it.label ? el('span', { class: 'pl', text: it.label }) : null);
+}
+
+function mapDistance(a, b) {
+  const rad = Math.PI / 180;
+  const dlat = (b.lat - a.latitude) * rad;
+  const dlon = (b.lon - a.longitude) * rad;
+  const h = Math.sin(dlat / 2) ** 2 + Math.cos(a.latitude * rad) * Math.cos(b.lat * rad) * Math.sin(dlon / 2) ** 2;
+  return 12742 * Math.asin(Math.sqrt(Math.min(1, h)));
 }
 
 async function renderMap(alive) {
@@ -1157,20 +1165,51 @@ async function renderMap(alive) {
   const all = list.filter((r) => Number.isFinite(r.latitude) && Number.isFinite(r.longitude)).map((r) => ({
       id: `r${r.id}`, kind: 'partner', lat: r.latitude, lng: r.longitude, km: r.distance_km, name: displayName(r.name), open: r.is_open, available: r.is_open && r.in_delivery_zone, rating: null,
       label: r.delivery_fee <= 400 ? fmtF(r.delivery_fee) : null, href: `#/r/${r.id}`, k: restoKey(r),
-      sub: `${r.prep_minutes}–${r.prep_minutes + 10} min · ${fmtKm(r.distance_km)} · ${r.in_delivery_zone ? `Livraison ${fmtF(r.delivery_fee)}` : 'Hors zone de livraison'}`,
+      sub: `${r.prep_minutes}–${r.prep_minutes + 10} min · ${fmtKm(r.distance_km)} · ${r.in_delivery_zone ? `Livraison ${fmtF(r.delivery_fee)}` : 'Hors zone de livraison'}${isDemo(r.name) ? ' · Démo' : ''}`,
     })).sort((a, b) => a.km - b.km);
   const visible = () => all.filter((it) => !filters.open || it.open);
   const pins = new Map();
   const markers = new Map();
   let gmap = null;
   let selected = null;
+  let osmStatus = 'Chargement des commerces OpenStreetMap…';
+  let addOsmPins = null;
   const paintSheet = () => {
     const it = all.find((x) => x.id === selected) || visible()[0];
+    if (it?.kind === 'osm') {
+      const picture = F(dishKey(it.cuisine || it.name), 70);
+      const attribution = el('div', { class: 'm', style: 'font-size:10px' });
+      fill(sheet, el('div', { class: 'grab' }),
+        el('div', { class: 'fl', style: 'align-items:flex-start;gap:10px' },
+          el('div', { style: 'width:96px' }, picture),
+          el('div', { style: 'flex:1' },
+            el('div', { class: 't', text: it.name }),
+            el('div', { class: 'm', text: [it.cuisine, fmtKm(it.km), it.address].filter(Boolean).join(' · ') }),
+            el('div', { class: 'm', text: it.hours ? `Horaires déclarés : ${it.hours}` : 'Horaires non renseignés' }),
+            el('div', { class: 'soonp', text: 'Non partenaire · menu et commande indisponibles' }))),
+        attribution,
+        el('a', { class: 'm', href: `https://www.openstreetmap.org/${it.osmId}`, target: '_blank', rel: 'noopener noreferrer', text: 'Voir sur OpenStreetMap ↗' }),
+        el('div', { class: 'm', style: 'font-size:10px' }, `${osmStatus} · `,
+          el('a', { href: 'https://www.openstreetmap.org/copyright', target: '_blank', rel: 'noopener noreferrer', text: '© contributeurs OpenStreetMap' })));
+      if (it.commons) {
+        WEOSM.photo(it.commons).then((photo) => {
+          if (!alive() || !picture.isConnected || !photo) return;
+          const image = el('img', { class: 'ph', src: photo.imageUrl, alt: '', loading: 'lazy' });
+          image.addEventListener('error', () => { image.remove(); attribution.textContent = 'Photo indisponible.'; });
+          picture.append(image);
+          fill(attribution, 'Photo : ', el('a', { href: photo.fileUrl, target: '_blank', rel: 'noopener noreferrer', text: photo.author }), ' · ',
+            el('a', { href: photo.licenseUrl, target: '_blank', rel: 'noopener noreferrer', text: photo.license }));
+        }).catch(() => { if (alive() && attribution.isConnected) attribution.textContent = 'Photo indisponible.'; });
+      }
+      return;
+    }
     fill(sheet, el('div', { class: 'grab' }), el('div', { class: 'h', style: 'margin-bottom:8px', text: 'À proximité' }),
       it ? el('a', { class: 'fl', href: it.href, style: 'gap:10px' },
         el('div', { style: 'width:96px' }, F(it.k, 70)),
         el('div', { style: 'flex:1' }, el('div', { class: 't', text: it.name }), el('div', { class: 'm', text: it.sub }), el('span', { class: 'save', text: it.available ? 'Voir le menu et commander' : 'Voir le menu' })),
         I('right')) : el('p', { class: 'm', text: 'Aucun restaurant avec ces filtres.' }),
+      el('div', { class: 'm', style: 'font-size:10px;margin-top:6px' }, `${osmStatus} · `,
+        el('a', { href: 'https://www.openstreetmap.org/copyright', target: '_blank', rel: 'noopener noreferrer', text: '© contributeurs OpenStreetMap' })),
     );
   };
   const select = (id) => {
@@ -1202,7 +1241,7 @@ async function renderMap(alive) {
     onCleanup(() => map.remove());
     new lib.Marker({ color: '#d74331' }).setLngLat([origin.longitude, origin.latitude])
       .setPopup(new lib.Popup({ offset: 25 }).setText('Adresse choisie')).addTo(map);
-    for (const it of all) {
+    addOsmPins = (items) => { for (const it of items) {
       const p = pinEl(it);
       p.classList.add('gm');
       p.addEventListener('click', () => select(it.id));
@@ -1215,18 +1254,18 @@ async function renderMap(alive) {
         },
         set zIndex(value) { p.style.zIndex = value || ''; },
       });
-    }
+    } };
+    addOsmPins(all);
     gmap = map;
     applyFilters();
-    return;
   } catch (e) {
     if (!alive()) return;
     toast(e.message, 'info');
   }
-  // Plan stylisé : repères positionnés d'après les coordonnées (partenaires uniquement).
-  const partners = all.filter((it) => it.kind === 'partner');
-  const radius = Math.max(1.5, ...partners.map((it) => it.km * 1.25));
+  if (!gmap) {
+  // Plan indicatif : les repères conservent leurs positions relatives.
   const layout = () => {
+    const radius = Math.max(1.5, ...all.map((it) => it.km * 1.25));
     const w = wrap.clientWidth;
     const h = wrap.clientHeight - 190;
     const cx = w / 2;
@@ -1236,7 +1275,7 @@ async function renderMap(alive) {
     fill(wrap, planSvg(), over, el('div', { class: 'me', style: `left:${cx}px;top:${cy}px` }, el('span', { class: 'pulse' }), el('i')),
       el('div', { class: 'mnote', style: 'top:108px', text: "Carte indisponible · plan indicatif, non géographique" }), sheet);
     pins.clear();
-    for (const it of partners) {
+    for (const it of all) {
       const p = pinEl(it);
       p.style.left = `${cx + (it.lng - origin.longitude) * kx * scale}px`;
       p.style.top = `${cy - (it.lat - origin.latitude) * 110.57 * scale}px`;
@@ -1250,6 +1289,26 @@ async function renderMap(alive) {
   const onResize = () => layout();
   window.addEventListener('resize', onResize);
   onCleanup(() => window.removeEventListener('resize', onResize));
+  addOsmPins = () => layout();
+  }
+  WEOSM.nearby(origin.city || 'ouaga').then((places) => {
+    if (!alive()) return;
+    const additions = places.filter((p) => !all.some((partner) => partner.kind === 'partner'
+      && fold(partner.name) === fold(p.name)
+      && mapDistance({ latitude: partner.lat, longitude: partner.lng }, p) < 0.1)).map((p) => ({
+      ...p, id: `osm:${p.id}`, osmId: p.id, kind: 'osm', lng: p.lon,
+      km: mapDistance(origin, p), open: false, available: false, label: null,
+    })).sort((a, b) => a.km - b.km).slice(0, 100);
+    all.push(...additions);
+    all.sort((a, b) => a.km - b.km);
+    osmStatus = `${additions.length} commerces OpenStreetMap affichés à 8 km du centre-ville · horaires OSM non vérifiés`;
+    addOsmPins(additions);
+    applyFilters();
+  }).catch((error) => {
+    if (!alive()) return;
+    osmStatus = error.message;
+    paintSheet();
+  });
 }
 
 // ---------------------------------------------------------------------

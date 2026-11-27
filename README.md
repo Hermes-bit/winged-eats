@@ -42,7 +42,9 @@ Les tarifs et paramètres sont dans [server/config.js](server/config.js) : frais
 
 ### Carte et restaurants réels
 
-L'onglet « À emporter » utilise MapLibre et le style Liberty d'OpenFreeMap pour afficher les restaurants partenaires ; touchez un repère puis sa fiche pour consulter le menu. L'accès au fond de carte nécessite une connexion internet. Si la carte ne charge pas, un plan indicatif est affiché.
+L'onglet « À emporter » utilise MapLibre et le style Liberty d'OpenFreeMap pour afficher les restaurants partenaires ; touchez un repère puis sa fiche pour consulter le menu. Il affiche aussi jusqu'à 100 restaurants, cafés et établissements de restauration OpenStreetMap dans un rayon de 8 km autour du centre de la ville choisie. Ces établissements sont des fiches informatives non partenaires : leurs menus et la commande ne sont pas disponibles. Le filtre « Ouvert » ne les inclut pas car leurs horaires ne sont pas évalués. L'accès au fond de carte et aux données nécessite une connexion internet. Si la carte ne charge pas, un plan indicatif est affiché ; une erreur de recherche OpenStreetMap est signalée.
+
+La recherche OpenStreetMap passe par Overpass et n'envoie que le centre public de la ville, pas les coordonnées de l'utilisateur. Lorsqu'un établissement porte une référence directe à un fichier Wikimedia Commons, sa photo peut être affichée avec son auteur et sa licence Creative Commons, sous réserve que ces informations soient disponibles. Sinon une illustration est utilisée. Les données OSM sont attribuées aux contributeurs OpenStreetMap et soumises à l'ODbL.
 
 Le suivi de commande affiche l'adresse enregistrée à la commande, pas une position de livreur : le suivi GPS en direct n'est pas encore disponible. Le fond de carte est fourni par OpenFreeMap et les données cartographiques par OpenStreetMap ; des requêtes sont envoyées à ces services lors de l'affichage.
 
