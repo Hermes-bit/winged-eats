@@ -219,3 +219,74 @@ body.bare #app { padding-bottom: 0; }
   .nb { grid-template-columns: 1fr 1fr 1.3fr 1fr 1fr; }
   .home-intro h1 { font-size: 28px; }
 }
+
+/* Navigation flottante et filtres : boutons ronds, sans libellé, avec une grande pastille de recherche. */
+body .nb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(456px, calc(100% - 24px));
+  height: auto;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  pointer-events: none;
+}
+body .nb a {
+  pointer-events: auto;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  min-height: 0;
+  border-radius: 50%;
+  background: #fff;
+  color: #6f6861;
+  box-shadow: 0 0 0 1px #0000001a, 0 6px 18px #00000026;
+  transition: transform .16s ease-out, color .16s;
+}
+body .nb a:active { transform: scale(.95); }
+body .nb a:focus-visible { outline: 3px solid #30231d; outline-offset: 2px; }
+body .nb a .ic { width: 22px; height: 22px; }
+body .nb a span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+body .nb a.on { background: #fff; color: var(--ink); }
+body .nb a.on .ic { stroke-width: 2.6; }
+body .nb a[data-s="search"] {
+  flex: 1;
+  width: auto;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 99px;
+  background: #fff;
+  color: #6f6861;
+  font-size: 15px;
+  font-weight: 600;
+}
+body .nb a[data-s="search"] span { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+body .nb a[data-s="search"].on { background: #fff; color: var(--ink); }
+body .nb .badge { top: 2px; left: auto; right: 2px; }
+@media (max-width: 350px) {
+  body .nb { gap: 6px; }
+  body .nb a { width: 44px; height: 44px; }
+  body .nb a[data-s="search"] { font-size: 13px; gap: 6px; }
+}
+
+.chips { align-items: center; gap: 8px; }
+.chip {
+  min-height: 40px;
+  padding: 0 16px;
+  gap: 8px;
+  border-radius: 99px;
+  background: #eeebe6;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+}
+.chip .ic { width: 18px; height: 18px; }
+.chip.on { background: var(--ink); color: #fff; }

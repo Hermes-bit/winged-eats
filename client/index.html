@@ -340,7 +340,7 @@ body.nonav .toasts,body.bare .toasts{bottom:96px}
 .mrow .ftw .ft{border-radius:14px}
 @media(max-width:350px){.banner-copy{max-width:70%}.banner .bt{font-size:21px}.hs{grid-auto-columns:58%}}
 </style>
-<link rel="stylesheet" href="refinement.css?v=9">
+<link rel="stylesheet" href="refinement.css?v=11">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -395,16 +395,16 @@ body.nonav .toasts,body.bare .toasts{bottom:96px}
 <main id="app"></main>
 
 <nav class="nb" id="nb" aria-label="Navigation principale">
-  <a href="#/" data-s="home" data-i="home">Accueil</a>
-  <a href="#/map" data-s="map" data-i="pin">À emporter</a>
-  <a href="#/search" data-s="search" data-i="search">Rechercher</a>
-  <a href="#/favorites" data-s="favorites" data-i="heart">Favoris</a>
-  <a href="#/account" data-s="account" data-i="user">Compte</a>
+  <a href="#/" data-s="home" data-i="home" aria-label="Accueil"><span>Accueil</span></a>
+  <a href="#/map" data-s="map" data-i="pin" aria-label="À emporter"><span>À emporter</span></a>
+  <a href="#/search" data-s="search" data-i="search"><span>Rechercher</span></a>
+  <a href="#/favorites" data-s="favorites" data-i="heart" aria-label="Favoris"><span>Favoris</span></a>
+  <a href="#/account" data-s="account" data-i="user" aria-label="Compte"><span>Compte</span></a>
 </nav>
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
 <script src="open-map.js?v=6"></script>
 <script src="osm-places.js?v=8"></script>
-<script src="app.js?v=14"></script>
+<script src="app.js?v=15"></script>
 </body>
 </html>
