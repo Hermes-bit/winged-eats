@@ -136,6 +136,42 @@ test('recherche par catégorie : établissements trop éloignés écartés', asy
   assert.equal(bad.status, 400);
 });
 
+test('recherche par quartier : pagination et validation avant appel Google', async () => {
+  const requests = [];
+  const service = createPlacesService(GOOGLE, {
+    fetchImpl: async (url, init) => {
+      requests.push(JSON.parse(init.body));
+      assert.match(init.headers['X-Goog-FieldMask'], /nextPageToken/);
+      return { ok: true, status: 200, json: async () => ({
+        places: [fakePlace(), fakePlace({ businessStatus: 'CLOSED_PERMANENTLY' })],
+        nextPageToken: requests.length === 1 ? 'page-suivante' : undefined,
+      }) };
+    },
+  });
+  const first = await service.neighborhood(ORIGIN, { name: 'Zogona' });
+  assert.equal(first.places.length, 1);
+  assert.equal(first.nextPageToken, 'page-suivante');
+  assert.match(requests[0].textQuery, /Zogona, Ouagadougou/);
+  assert.equal(requests[0].includedType, 'restaurant');
+  const next = await service.neighborhood(ORIGIN, { name: 'Zogona', pageToken: first.nextPageToken });
+  assert.equal(requests[1].pageToken, 'page-suivante');
+  assert.equal(next.nextPageToken, null);
+  await assert.rejects(service.neighborhood(ORIGIN, { name: ' ' }), (e) => e.status === 400);
+  await assert.rejects(service.neighborhood(ORIGIN, { name: 'Zogona', pageToken: 'x'.repeat(2049) }), (e) => e.status === 400);
+  assert.equal(requests.length, 2);
+});
+
+test('route quartier renvoie les résultats et accepte l’origine GitHub Pages', async () => {
+  const res = await fetch(`${base}/api/places/neighborhood?name=Zogona&lat=12.365&lon=-1.51`, {
+    headers: { Origin: 'https://hermes-bit.github.io' },
+  });
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get('access-control-allow-origin'), 'https://hermes-bit.github.io');
+  assert.ok(Array.isArray((await res.json()).places));
+  const invalid = await fetch(`${base}/api/places/neighborhood?name=`);
+  assert.equal(invalid.status, 400);
+});
+
 test('photo : redirection vers l’image Google actuelle, non mise en cache', async () => {
   const res = await fetch(`${base}/api/places/photo?name=${encodeURIComponent(PHOTO)}&w=400`, { redirect: 'manual' });
   assert.equal(res.status, 302);

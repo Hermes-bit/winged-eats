@@ -55,6 +55,7 @@ Dans Google Cloud :
 
 Fonctionnement :
 - Les restaurants de Ouagadougou sont demandés **en direct** à Google : populaires autour de l'adresse, par catégorie, ou par recherche. Rien n'est enregistré en base, conformément aux conditions de Google Maps Platform. C'est pourquoi photos, notes et horaires restent toujours à jour.
+- La recherche par quartier est déclenchée à la demande et paginée. Les résultats Google peuvent inclure des adresses voisines et ne constituent pas une liste exhaustive ni un découpage administratif vérifié. Chaque page supplémentaire consomme un appel.
 - Ils sont classés dans des catégories façon plateforme de livraison : Maquis, Grillades, Africaine, Fast-food, Pizza, Chawarma, Asiatique, Européenne, Café, Boulangerie, Desserts.
 - Ce sont des fiches vitrines (appeler, itinéraire) avec la mention « Bientôt sur Winged Eats ». Seuls les restaurants partenaires sont commandables.
 - Le menu des établissements Google n'est pas garanti : la fiche propose le site du restaurant lorsqu'il est disponible, sinon Google Maps, et invite à contacter le restaurant. Aucun plat ni prix n'est inventé.

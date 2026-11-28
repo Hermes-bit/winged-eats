@@ -492,6 +492,7 @@ function homeView(list, origin, redraw) {
     el('div', { class: 'chips', style: 'margin-top:12px' },
       el('button', { class: !homeState.category ? 'chip on' : 'chip', type: 'button', onclick: reset }, 'Tout'),
       el('button', { class: 'chip', type: 'button', onclick: toPartners }, 'Restaurants'),
+      el('a', { class: 'chip', href: '#/quartiers' }, 'Quartiers de Ouaga'),
       el('button', { class: 'chip', type: 'button', onclick: () => toast('Courses : bientôt disponible', 'info') }, 'Courses', el('span', { class: 'soon', text: 'bientôt' })),
       el('button', { class: 'chip', type: 'button', onclick: () => toast('Pharmacies de garde : bientôt disponible', 'info') }, 'Pharmacie', el('span', { class: 'soon', text: 'bientôt' })),
       el('button', { class: homeState.category === 'cafe' ? 'chip on' : 'chip', type: 'button', onclick: () => { homeState.category = homeState.category === 'cafe' ? null : 'cafe'; redraw(); } }, 'Boissons')),
@@ -1035,6 +1036,64 @@ async function renderOrders(alive) {
 // Recherche
 // ---------------------------------------------------------------------
 
+function renderNeighborhoods(alive) {
+  chrome('nav', 'search');
+  const origin = store.get('we_origin', null);
+  const input = el('input', { type: 'search', placeholder: 'Ex. Zogona, Gounghin…', 'aria-label': 'Quartier de Ouagadougou', maxlength: 80, required: true, style: 'flex:1;border:0;background:none;font-size:14px;outline:none' });
+  const results = el('div', { class: 'vlist', 'aria-live': 'polite' });
+  const status = el('div', { class: 'pad', 'aria-live': 'polite' });
+  const more = el('div', { class: 'pad' });
+  let sequence = 0;
+  let nextPageToken = null;
+  let currentName = '';
+  const seen = new Set();
+  async function load(token = null) {
+    const request = ++sequence;
+    fill(status, el('p', { class: 'm', text: 'Recherche en cours…' }));
+    fill(more);
+    try {
+      const params = new URLSearchParams({ name: currentName });
+      if (origin) { params.set('lat', origin.latitude); params.set('lon', origin.longitude); }
+      if (token) params.set('pageToken', token);
+      const data = await api(`/places/neighborhood?${params}`);
+      if (!alive() || request !== sequence) return;
+      for (const p of data.places) {
+        if (!seen.has(p.id)) { seen.add(p.id); results.append(placeCard(p)); }
+      }
+      nextPageToken = data.nextPageToken;
+      fill(status, el('p', { class: 'm', text: seen.size ? `${seen.size} résultat(s) pour « ${currentName} »` : 'Aucun restaurant trouvé pour cette recherche.' }));
+      if (nextPageToken) fill(more, el('button', { class: 'btn lt', type: 'button', onclick: () => load(nextPageToken) }, 'Afficher plus de résultats'));
+    } catch (e) {
+      if (!alive() || request !== sequence) return;
+      fill(status, alertBox(e.message));
+      fill(more, el('button', { class: 'btn lt', type: 'button', onclick: () => load(token) }, 'Réessayer'));
+    }
+  }
+  function search(name) {
+    const value = name.trim();
+    if (value.length < 2 || value.length > 80) {
+      sequence += 1;
+      fill(more);
+      fill(status, alertBox('Saisissez un nom de quartier de 2 à 80 caractères.'));
+      return;
+    }
+    currentName = value;
+    input.value = value;
+    nextPageToken = null;
+    seen.clear();
+    fill(results);
+    load();
+  }
+  setView(topbar('Restaurants par quartier', { back: '#/' }),
+    el('div', { class: 'pad' },
+      el('p', { class: 'm', text: 'Recherchez un quartier de Ouagadougou. Google peut inclure des adresses voisines et ne garantit pas une liste exhaustive.' }),
+      googleOn()
+        ? [el('form', { class: 'fl search-form', role: 'search', onsubmit: (e) => { e.preventDefault(); search(input.value); input.blur(); } }, I('search'), input, el('button', { class: 'chip', type: 'submit' }, 'Chercher')),
+          el('div', { class: 'chips', style: 'margin-top:12px' }, CITIES.ouaga.zones.map((zone) => el('button', { class: 'chip', type: 'button', onclick: () => search(zone.name) }, zone.name)))]
+        : alertBox('La recherche Google est indisponible. Réessayez plus tard.')),
+    status, results, more, googleCredit());
+}
+
 function highlight(text, q) {
   const i = text.toLowerCase().indexOf(q.toLowerCase());
   if (!q || i < 0) return [text];
@@ -1517,6 +1576,7 @@ function route() {
   if (a === 'orders') return renderOrders(alive);
   if (a === 'favorites') return renderFavorites(alive);
   if (a === 'search') return renderSearch(alive);
+  if (a === 'quartiers') return renderNeighborhoods(alive);
   if (a === 'map') return renderMap(alive);
   if (a === 'offres') return renderOffres(alive);
   if (a === 'account') return renderAccount();

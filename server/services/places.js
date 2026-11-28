@@ -213,6 +213,33 @@ function createPlacesService(google, { fetchImpl = globalThis.fetch } = {}) {
       return list;
     },
 
+    async neighborhood(origin, { name, pageToken }) {
+      if (typeof name !== 'string' || name.trim().length < 2 || name.trim().length > 80 || /[\u0000-\u001f\u007f]/.test(name)) {
+        throw new ApiError(400, 'Nom de quartier invalide');
+      }
+      if (pageToken !== undefined && (typeof pageToken !== 'string' || !pageToken || pageToken.length > 2048 || /[\u0000-\u001f\u007f]/.test(pageToken))) {
+        throw new ApiError(400, 'Page de résultats invalide');
+      }
+      const body = {
+        textQuery: `restaurant ${name.trim()}, Ouagadougou, Burkina Faso`,
+        includedType: 'restaurant',
+        pageSize: 20,
+        languageCode: 'fr',
+        regionCode: 'BF',
+        locationBias: circle({ latitude: 12.3714, longitude: -1.5197 }, 20000),
+      };
+      if (pageToken) body.pageToken = pageToken;
+      const data = await call('/places:searchText', {
+        method: 'POST',
+        fields: ['nextPageToken', ...LIST_FIELDS.map((f) => `places.${f}`)].join(','),
+        body,
+      });
+      return {
+        places: keepOpenBusinesses(data.places).map((p) => normalize(p, origin)),
+        nextPageToken: data.nextPageToken || null,
+      };
+    },
+
     async details(placeId, origin) {
       if (!isValidPlaceId(placeId)) throw new ApiError(400, 'Identifiant Google invalide');
       const place = await call(`/places/${encodeURIComponent(placeId)}?languageCode=fr&regionCode=BF`, { fields: DETAIL_FIELDS.join(',') });

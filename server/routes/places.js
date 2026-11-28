@@ -46,6 +46,13 @@ function createPlacesRouter(places, google) {
     }));
   }));
 
+  router.get('/places/neighborhood', wrap(async (req, res) => {
+    res.json(await places.neighborhood(readOrigin(req.query, false), {
+      name: req.query.name,
+      pageToken: req.query.pageToken,
+    }));
+  }));
+
   // Redirige vers l'image hébergée par Google : toujours la photo actuelle de l'établissement.
   router.get('/places/photo', wrap(async (req, res) => {
     const uri = await places.photoUri(req.query.name, req.query.w);
