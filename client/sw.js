@@ -4,9 +4,9 @@
 // Stratégie « réseau d'abord » : on sert toujours la dernière version, le cache ne sert qu'hors connexion.
 // Les appels /api/ (commandes, menus) ne sont jamais mis en cache.
 
-const CACHE = 'winged-eats-v25';
+const CACHE = 'winged-eats-v26';
 const SHELL = [
-  './', './index.html', './app.js?v=25', './osm-places.js?v=8', './open-map.js?v=6', './refinement.css?v=19',
+  './', './index.html', './app.js?v=26', './osm-places.js?v=8', './open-map.js?v=6', './refinement.css?v=20',
   './card-grillades.svg', './card-africaine.svg', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png',
 ];

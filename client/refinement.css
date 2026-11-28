@@ -294,6 +294,27 @@ body.bare #app { padding-bottom: 0; }
 .mapw .over .chip { box-shadow: 0 2px 10px #29231f1a; }
 .msheet { border-radius: 24px 24px 0 0; padding: 10px 20px 16px; }
 .msheet .h { font-size: 19px; }
+.msheet.map-carousel-shell { max-height: none; overflow: visible; padding: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.map-carousel { position: relative; display: flex; gap: 12px; overflow-x: auto; padding: 4px 16px; scroll-padding-inline: 16px; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+.map-carousel[hidden] { display: none; }
+.map-carousel::-webkit-scrollbar { display: none; }
+.map-carousel:focus-visible { outline: 2px solid #a93628; outline-offset: -2px; }
+.map-card { flex: 0 0 calc(100% - 36px); min-width: 0; padding: 7px; overflow: hidden; scroll-snap-align: start; border-radius: 18px; background: #fff; box-shadow: 0 6px 24px #2319132b; }
+.map-card-media { position: relative; }
+.map-card-picture .ft { width: 100%; height: clamp(110px, 21dvh, 185px); border-radius: 12px; }
+.map-card-media-link { position: absolute; inset: 0; z-index: 1; border-radius: 12px; }
+.map-card-body { padding: 10px 5px 5px; }
+.map-card-heading { display: flex; align-items: center; gap: 10px; }
+.map-card-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #221d19; font-size: 18px; font-weight: 750; line-height: 1.2; text-decoration: none; }
+.map-card-fav { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border: 0; border-radius: 50%; background: transparent; color: #6d6660; cursor: pointer; }
+.map-card-fav .ic { width: 23px; height: 23px; }
+.map-card-fav.on { color: var(--red); }
+.map-card-fav.on .ic { fill: currentColor; }
+.map-card-meta, .map-card-note { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; line-height: 1.4; color: #6d6660; }
+.map-card-note { margin-top: 2px; font-size: 11px; }
+.map-carousel-info { max-height: 78px; overflow-y: auto; margin: 3px 16px 4px; padding: 5px 10px; border-radius: 10px; background: #fffd; box-shadow: 0 2px 10px #23191318; font-size: 10px; }
+.map-carousel-info p { margin: 0; font-size: 10px; }
+.map-carousel-info .chip { min-height: 30px; margin-top: 4px; padding: 5px 10px; font-size: 11px; }
 
 @media (max-width: 350px) {
   .nb { grid-template-columns: 1fr 1fr 1.3fr 1fr 1fr; }
