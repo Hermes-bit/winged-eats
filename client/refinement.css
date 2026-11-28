@@ -203,6 +203,15 @@ body.bare #app { padding-bottom: 0; }
 .zone-filter:focus { outline: 2px solid #a93628; outline-offset: 1px; }
 .zone-source { margin: 0 0 8px; }
 .zone-source a { text-decoration: underline; }
+.zone-drag-handle { display: block; width: 100%; padding: 8px 0 12px; border: 0; background: transparent; touch-action: none; cursor: pointer; }
+.zone-drag-handle:focus-visible { outline: 2px solid #a93628; outline-offset: -2px; }
+.zone-drag-handle .grab { display: block; margin: 0 auto; }
+.bsheet.zone-dragging { animation: none; transition: none; }
+.bsheet.zone-drag-return { animation: none; transition: transform .18s ease-out; }
+.sheet-bg.closing .bsheet.zone-drag-dismiss { animation: none; transition: transform .2s ease-in; }
+@media (prefers-reduced-motion: reduce) {
+  .bsheet.zone-drag-return, .sheet-bg.closing .bsheet.zone-drag-dismiss { transition: none; }
+}
 .search-header { padding-top: calc(20px + env(safe-area-inset-top)); }
 .search-header .search-form { height: 52px; border-radius: 99px; padding: 0 12px; background: #f3f2f0; }
 .search-header .search-form input { font: inherit; font-size: 16px; }

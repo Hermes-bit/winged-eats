@@ -285,7 +285,7 @@ function toast(message, ic = 'check') {
 const alertBox = (msg, info = false) => el('div', { class: info ? 'alert i' : 'alert', role: info ? 'status' : 'alert' }, I('info'), el('span', { text: msg }));
 const demoNote = (text) => el('div', { class: 'demo' }, I('info'), el('span', null, el('b', { text: 'Démonstration · ' }), text));
 
-function openSheet(build, { flush = false, label = '', onClose = null } = {}) {
+function openSheet(build, { flush = false, label = '', onClose = null, swipeDown = false } = {}) {
   const prev = document.activeElement;
   const bg = el('div', { class: 'sheet-bg' });
   const sheet = el('div', { class: flush ? 'bsheet flush' : 'bsheet', role: 'dialog', 'aria-modal': 'true', 'aria-label': label });
@@ -304,6 +304,49 @@ function openSheet(build, { flush = false, label = '', onClose = null } = {}) {
   bg.addEventListener('click', (e) => { if (e.target === bg) close(); });
   document.addEventListener('keydown', onKey);
   sheet.append(...[build(close)].flat(Infinity).filter(Boolean));
+  if (swipeDown) {
+    let gesture = null;
+    sheet.addEventListener('touchstart', (e) => {
+      if (gesture) finishDrag(true);
+      if (e.touches.length !== 1 || sheet.scrollTop > 0 || e.target.closest('input, textarea, a')) return;
+      const touch = e.touches[0];
+      gesture = { id: touch.identifier, x: touch.clientX, y: touch.clientY, distance: 0, dragging: false };
+    }, { passive: true });
+    sheet.addEventListener('touchmove', (e) => {
+      if (!gesture) return;
+      if (e.touches.length !== 1) { finishDrag(true); return; }
+      const touch = [...e.touches].find((t) => t.identifier === gesture.id);
+      if (!touch) { finishDrag(true); return; }
+      const dy = touch.clientY - gesture.y;
+      const dx = touch.clientX - gesture.x;
+      if (!gesture.dragging) {
+        if (dy < -8 || Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) || sheet.scrollTop > 0) { gesture = null; return; }
+        if (dy < 8) return;
+        gesture.dragging = true;
+        sheet.classList.remove('zone-drag-return');
+        sheet.classList.add('zone-dragging');
+      }
+      if (e.cancelable) e.preventDefault();
+      gesture.distance = Math.max(0, dy);
+      sheet.style.transform = `translateY(${gesture.distance}px)`;
+    }, { passive: false });
+    function finishDrag(cancelled) {
+      if (!gesture || !gesture.dragging) { gesture = null; return; }
+      const dismiss = !cancelled && gesture.distance >= 90;
+      gesture = null;
+      sheet.classList.remove('zone-dragging');
+      if (dismiss) {
+        sheet.classList.add('zone-drag-dismiss');
+        sheet.style.transform = 'translateY(100%)';
+        close();
+      } else {
+        sheet.classList.add('zone-drag-return');
+        sheet.style.transform = 'translateY(0)';
+      }
+    }
+    sheet.addEventListener('touchend', () => finishDrag(false));
+    sheet.addEventListener('touchcancel', () => finishDrag(true));
+  }
   bg.append(sheet);
   document.body.append(bg);
   document.body.style.overflow = 'hidden';
@@ -491,7 +534,7 @@ function zoneSheet(cityKey, message) {
     filter.addEventListener('input', showZones);
     showZones();
     return [
-      el('div', { class: 'grab' }),
+      el('button', { class: 'zone-drag-handle', type: 'button', 'aria-label': 'Fermer la fenêtre', onclick: close }, el('span', { class: 'grab' })),
       el('h2', { text: `Où livrer à ${city.name} ?` }),
       el('p', { class: 'sub', text: 'Choisissez votre quartier ou utilisez votre position.' }),
       el('div', { class: 'seg', style: 'grid-template-columns:1fr 1fr;margin-bottom:12px' },
@@ -504,7 +547,7 @@ function zoneSheet(cityKey, message) {
         ' (', el('a', { href: 'https://creativecommons.org/licenses/by/4.0/', target: '_blank', rel: 'noopener noreferrer' }, 'CC BY 4.0'), ').') : null,
       list,
     ];
-  }, { label: 'Adresse de livraison' });
+  }, { label: 'Adresse de livraison', swipeDown: true });
 }
 
 function renderLogin(message) {
