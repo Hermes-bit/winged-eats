@@ -1439,19 +1439,29 @@ function loadGoogleMaps(key) {
   return mapsLoading;
 }
 
-function mapCard(item, alive) {
+let mapReturn = null;
+let mapReturnTimer = null;
+function clearMapReturn() {
+  clearTimeout(mapReturnTimer);
+  mapReturn = null;
+}
+
+function mapCard(item, alive, onOpen) {
   const isGoogle = item.kind === 'google';
   const isOsm = item.kind === 'osm';
   const href = isGoogle ? `#/p/${encodeURIComponent(item.id)}` : isOsm ? `https://www.openstreetmap.org/${item.osmId}` : item.href;
   const linkProps = isOsm ? { target: '_blank', rel: 'noopener noreferrer' } : {};
   const picture = el('div', { class: 'map-card-picture' }, photoFrame(null).frame);
+  const remember = (event) => {
+    if (isGoogle && event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) onOpen(item);
+  };
   const media = el('div', { class: 'map-card-media' }, picture,
-    el('a', { class: 'map-card-media-link', href, ...linkProps, 'aria-label': `Voir ${item.name}` }));
+    el('a', { class: 'map-card-media-link', href, ...linkProps, onclick: remember, 'aria-label': `Voir ${item.name}` }));
   const meta = isGoogle
     ? [item.rating ? `★ ${fmtRating(item.rating)}${item.rating_count ? ` (${num(item.rating_count)})` : ''}` : null,
       item.address, item.open_now === true ? 'Ouvert' : item.open_now === false ? 'Fermé' : null].filter(Boolean).join(' · ')
     : isOsm ? [item.cuisine, fmtKm(item.km), item.address, item.hours ? `Horaires déclarés : ${item.hours}` : null].filter(Boolean).join(' · ') : item.sub;
-  const title = el('a', { class: 'map-card-title', href, ...linkProps, text: item.name });
+  const title = el('a', { class: 'map-card-title', href, ...linkProps, onclick: remember, text: item.name });
   const favorite = isGoogle ? favBtn(item.id, 'map-card-fav') : null;
   const card = el('article', { class: 'map-card', 'aria-label': item.name },
     media,
@@ -1496,7 +1506,7 @@ function nearbyMapItems(items, selectedId) {
   });
 }
 
-function mapCarousel(sheet, alive, onSelect) {
+function mapCarousel(sheet, alive, onSelect, onOpen = () => {}) {
   const track = el('div', { class: 'map-carousel', role: 'region', 'aria-label': 'Restaurants à proximité, faites défiler horizontalement', tabindex: '0' });
   const info = el('div', { class: 'map-carousel-info', 'aria-live': 'polite' });
   const entries = new Map();
@@ -1524,11 +1534,17 @@ function mapCarousel(sheet, alive, onSelect) {
   }
   function selectVisible() {
     if (suppressScroll || !track.children.length) return;
-    const left = track.getBoundingClientRect().left + parseFloat(getComputedStyle(track).paddingLeft);
+    const center = track.getBoundingClientRect().left + track.clientWidth / 2;
+    const cardCenter = (child) => { const rect = child.getBoundingClientRect(); return rect.left + rect.width / 2; };
     const card = [...track.children].reduce((best, child) =>
-      Math.abs(child.getBoundingClientRect().left - left) < Math.abs(best.getBoundingClientRect().left - left) ? child : best);
+      Math.abs(cardCenter(child) - center) < Math.abs(cardCenter(best) - center) ? child : best);
     const id = card.dataset.placeId;
     if (id !== selectedId) { selectedId = id; loadNearby(); onSelect(entries.get(id).item); }
+  }
+  function scrollToCard(card, behavior = 'instant') {
+    const rect = card.getBoundingClientRect();
+    const center = track.getBoundingClientRect().left + track.clientWidth / 2;
+    track.scrollTo({ left: track.scrollLeft + rect.left + rect.width / 2 - center, behavior });
   }
   track.addEventListener('scroll', () => { clearTimeout(timer); timer = setTimeout(selectVisible, 100); }, { passive: true });
   track.addEventListener('keydown', (event) => {
@@ -1538,7 +1554,7 @@ function mapCarousel(sheet, alive, onSelect) {
     const next = children[index + (event.key === 'ArrowRight' ? 1 : -1)];
     if (!next) return;
     event.preventDefault();
-    track.scrollTo({ left: next.offsetLeft - parseFloat(getComputedStyle(track).paddingLeft), behavior: scrollBehavior() });
+    scrollToCard(next, scrollBehavior());
   });
   return {
     clear() {
@@ -1558,29 +1574,31 @@ function mapCarousel(sheet, alive, onSelect) {
       for (const item of items) {
         const key = String(item.id);
         if (!entries.has(key)) {
-          const entry = { ...mapCard(item, alive), item, loaded: false };
+          const entry = { ...mapCard(item, alive, (opened) => onOpen(opened, [...track.children].map((child) => entries.get(child.dataset.placeId).item))), item, loaded: false };
           entry.card.dataset.placeId = key;
           entries.set(key, entry);
           track.append(entry.card);
           if (observer) observer.observe(entry.card);
         }
       }
+      track.hidden = !items.length;
       if (reset) {
         clearTimeout(timer);
         suppressScroll = true;
         for (const item of items) track.append(entries.get(String(item.id)).card);
-        track.scrollLeft = 0;
+        const selected = entries.get(String(id));
+        if (selected) scrollToCard(selected.card);
+        else track.scrollLeft = 0;
         requestAnimationFrame(() => { suppressScroll = false; });
       }
       selectedId = id === null || id === undefined ? null : String(id);
       loadNearby();
-      track.hidden = !items.length;
     },
     status(...content) { fill(info, ...content); },
   };
 }
 
-async function renderGoogleMap(origin, alive, target = null) {
+async function renderGoogleMap(origin, alive, target = null, restored = null) {
   chrome('nav', 'map');
   const host = el('div', { class: 'gmap', 'aria-label': 'Carte Google des restaurants' });
   const sheet = el('div', { class: 'msheet', 'aria-live': 'polite' });
@@ -1595,7 +1613,7 @@ async function renderGoogleMap(origin, alive, target = null) {
     const { Map: GoogleMap } = await google.maps.importLibrary('maps');
     const { AdvancedMarkerElement } = await google.maps.importLibrary('marker');
     if (!alive()) return;
-    const map = new GoogleMap(host, { center: { lat: origin.latitude, lng: origin.longitude }, zoom: target ? 16 : 12, mapId: appConfig.google.map_id || 'DEMO_MAP_ID', disableDefaultUI: true, zoomControl: true, clickableIcons: false, gestureHandling: 'greedy' });
+    const map = new GoogleMap(host, { center: restored?.center || { lat: origin.latitude, lng: origin.longitude }, zoom: restored?.zoom ?? (target ? 16 : 12), mapId: appConfig.google.map_id || 'DEMO_MAP_ID', disableDefaultUI: true, zoomControl: true, clickableIcons: false, gestureHandling: 'greedy' });
     let markers = new Map();
     let placesById = new Map();
     let request = 0;
@@ -1605,21 +1623,33 @@ async function renderGoogleMap(origin, alive, target = null) {
     let mapStatus = '';
     let mapError = null;
     let moreAction = null;
+    let pagination = null;
     onCleanup(() => { request++; markers.forEach((marker) => { marker.map = null; }); google.maps.event.clearInstanceListeners(map); });
     const carousel = mapCarousel(sheet, alive, (item) => {
       hasBrowsed = true;
       selectedPlace = item;
       map.panTo({ lat: item.latitude, lng: item.longitude });
       show();
+    }, (item, items) => {
+      const center = map.getCenter();
+      clearMapReturn();
+      mapReturn = {
+        route: location.hash, selectedId: item.id, items,
+        center: item.id === selectedPlace?.id ? { lat: center.lat(), lng: center.lng() } : { lat: item.latitude, lng: item.longitude },
+        zoom: map.getZoom(),
+        pagination: pagination ? { ...pagination } : null,
+        error: mapError ? mapError.message : null,
+      };
+      mapReturnTimer = setTimeout(clearMapReturn, PT);
     });
-    function show(reset = false) {
+    function show(reset = false, preserveOrder = false) {
       const p = selectedPlace;
       markers.forEach((marker, id) => {
         marker.content.classList.toggle('on', id === p?.id);
         marker.content.setAttribute('aria-pressed', String(id === p?.id));
       });
       let items = [...placesById.values()];
-      if (reset) items = nearbyMapItems(items, p?.id);
+      if (reset && !preserveOrder) items = nearbyMapItems(items, p?.id);
       carousel.update(items, p?.id, reset);
       carousel.status(
         el('p', { class: 'm', text: `${markers.size} établissement(s) · ${mapStatus || 'Données Google Maps, résultats non exhaustifs.'}` }),
@@ -1648,6 +1678,7 @@ async function renderGoogleMap(origin, alive, target = null) {
       show();
       try {
         for (let page = 0; page < limit; page++) {
+          pagination = { center, token, remaining: limit - page, loading: true };
           const params = new URLSearchParams({ lat: center.latitude, lon: center.longitude });
           if (token) params.set('pageToken', token);
           const data = await api(`/places/map?${params}`);
@@ -1663,11 +1694,13 @@ async function renderGoogleMap(origin, alive, target = null) {
           if (!token) break;
         }
         mapStatus = '';
+        pagination = token ? { center, token, remaining: 1, loading: false } : null;
         if (token) moreAction = () => loadMapPages(current, center, token, 1);
       } catch (error) {
         if (!alive() || current !== request) return;
         mapStatus = 'Les résultats déjà chargés restent visibles.';
         mapError = error;
+        pagination = { center, token, remaining: 1, loading: false };
         moreAction = () => loadMapPages(current, center, token, 1);
       }
       if (alive() && current === request) show(!hasBrowsed && !mapError);
@@ -1678,6 +1711,7 @@ async function renderGoogleMap(origin, alive, target = null) {
       mapStatus = 'Recherche des restaurants…';
       mapError = null;
       moreAction = null;
+      pagination = null;
       show();
       try {
         const center = map.getCenter();
@@ -1707,7 +1741,26 @@ async function renderGoogleMap(origin, alive, target = null) {
       } finally { if (alive() && current === request) search.disabled = false; }
     }
     search.addEventListener('click', findPlaces);
-    await findPlaces();
+    if (restored) {
+      for (const p of restored.items) addMarker(p);
+      selectedPlace = placesById.get(restored.selectedId) || null;
+      hasBrowsed = true;
+      firstSearch = false;
+      pagination = restored.pagination;
+      if (restored.error) {
+        mapError = new Error(restored.error);
+        mapStatus = 'Les résultats déjà chargés restent visibles.';
+      }
+      if (pagination && !pagination.loading) {
+        const page = pagination;
+        moreAction = () => loadMapPages(request, page.center, page.token, page.remaining);
+      }
+      show(true, true);
+      if (pagination?.loading) {
+        const page = pagination;
+        await loadMapPages(request, page.center, page.token, page.remaining);
+      }
+    } else await findPlaces();
   } catch (error) {
     if (!alive()) return;
     fill(sheet, el('div', { class: 'grab' }), alertBox(error.message), el('p', { class: 'm', text: 'Vérifiez la clé et les restrictions Google Maps.' }), el('button', { class: 'chip', type: 'button', onclick: route }, 'Réessayer'));
@@ -1718,7 +1771,9 @@ async function renderMap(alive, placeId = null) {
   const savedOrigin = store.get('we_origin', null);
   let origin = { latitude: 12.3714, longitude: -1.5197, city: 'ouaga' };
   let target = null;
-  if (placeId) {
+  const restored = mapReturn?.route === location.hash ? mapReturn : null;
+  if (restored) clearMapReturn();
+  if (placeId && !restored) {
     chrome('nav', 'map');
     setView(topbar('Carte du restaurant'), el('div', { class: 'pad' }, el('p', { class: 'm', text: 'Chargement du restaurant…' })));
     if (!appConfig.google.maps_key || !googleOn() || mapsAuthFailed) {
@@ -1737,7 +1792,7 @@ async function renderMap(alive, placeId = null) {
     }
     origin = { latitude: target.latitude, longitude: target.longitude, city: 'ouaga' };
   }
-  if (appConfig.google.maps_key && googleOn() && !mapsAuthFailed) return renderGoogleMap(origin, alive, target);
+  if (appConfig.google.maps_key && googleOn() && !mapsAuthFailed) return renderGoogleMap(origin, alive, target, restored);
   chrome('nav', 'map');
   const wrap = el('div', { class: 'mapw' }, planSvg());
   const sheet = el('div', { class: 'msheet' }, el('div', { class: 'grab' }), el('div', { class: 'skel', style: 'height:70px' }));
@@ -2093,6 +2148,7 @@ function chrome(mode, section) {
 function route() {
   const token = ++routeSeq;
   const alive = () => token === routeSeq;
+  if (mapReturn && location.hash !== mapReturn.route && location.hash !== `#/p/${encodeURIComponent(mapReturn.selectedId)}`) clearMapReturn();
   cleanups.forEach((fn) => { try { fn(); } catch { /* rien */ } });
   cleanups = [];
   closeAllSheets();
