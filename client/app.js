@@ -216,24 +216,38 @@ function photoFrame(h, ...children) {
     frame,
     loading: () => { status.textContent = 'Chargement de la photo…'; },
     unavailable: () => { status.textContent = 'Photo indisponible'; },
-    show(url, onLoad) {
+    show(url, onLoad, priority = false) {
       status.textContent = 'Chargement de la photo…';
-      const img = el('img', { class: 'ph', alt: '', loading: 'lazy', decoding: 'async' });
-      img.addEventListener('load', () => { status.hidden = true; if (onLoad) onLoad(); });
-      img.addEventListener('error', () => { img.remove(); status.textContent = 'Photo indisponible'; status.hidden = false; });
+      let settled = false;
+      const hideStatus = setTimeout(() => { if (!settled) status.hidden = true; }, 900);
+      const img = el('img', { class: 'ph', alt: '', loading: priority ? 'eager' : 'lazy', decoding: 'async' });
+      img.fetchPriority = priority ? 'high' : 'auto';
+      img.addEventListener('load', () => {
+        settled = true;
+        clearTimeout(hideStatus);
+        status.hidden = true;
+        if (onLoad) onLoad();
+      });
+      img.addEventListener('error', () => {
+        settled = true;
+        clearTimeout(hideStatus);
+        img.remove();
+        status.textContent = 'Photo indisponible';
+        status.hidden = false;
+      });
       frame.append(img);
       img.src = url;
     },
   };
 }
-function placePhoto(photo, w, h, ...children) {
+function placePhoto(photo, w, h, priority = false, ...children) {
   const view = photoFrame(h, ...children);
   if (photo) view.show(`${PLACES_SERVER}/api/places/photo?name=${encodeURIComponent(photo.name)}&w=${w}`, () => {
     const authors = photo.authors?.length ? photo.authors : photo.author ? [{ name: photo.author, uri: photo.author_uri }] : [];
     if (authors.length) view.frame.append(el('span', { class: 'credit' }, '© ', authors.map((author, i) => [
       i ? ', ' : '', author.uri ? el('a', { href: author.uri, target: '_blank', rel: 'noopener noreferrer', text: author.name }) : author.name,
     ])));
-  });
+  }, priority);
   return view.frame;
 }
 
@@ -471,10 +485,10 @@ function partnerCard(r, onFavoriteChange = null) {
     out ? null : el('a', { class: 'stretch', href: `#/r/${r.id}`, 'aria-label': `${name}, ${r.category}` }));
 }
 
-function placeCard(p, onFavoriteChange = null) {
+function placeCard(p, onFavoriteChange = null, priority = false) {
   const label = p.category !== 'restaurant' ? catInfo(p.category).label : (p.type_label || 'Restaurant');
   return el('article', { class: 'rc' },
-    placePhoto(p.photo, 480, null, el('span', { class: 'tag g', text: 'Bientôt' }), favBtn(p.id, 'heart', onFavoriteChange)),
+    placePhoto(p.photo, 480, null, priority, el('span', { class: 'tag g', text: 'Bientôt' }), favBtn(p.id, 'heart', onFavoriteChange)),
     el('div', { class: 't ell', text: p.name }),
     el('div', { class: 'm ell' }, p.rating ? [S(), el('b', { style: 'color:#22150F', text: ` ${fmtRating(p.rating)}` }), ` (${num(p.rating_count)})`] : 'Pas encore noté',
       p.distance_km !== null ? ` · ${fmtKm(p.distance_km)}` : ''),
@@ -491,7 +505,7 @@ function googleBlock({ title, sub, layout = 'hs', load, transform = (l) => l, em
   load().then((list) => {
     const items = transform(list);
     if (!items.length) { if (empty) fill(box, el('p', { class: 'm', style: 'padding:0 0 4px', text: empty })); else wrap.remove(); return; }
-    fill(box, items.map((p) => placeCard(p)));
+    fill(box, items.map((p, index) => placeCard(p, null, index < 2)));
     wrap.append(googleCredit());
   }).catch((e) => fill(box, el('div', { style: 'grid-column:1/-1' }, alertBox(e.message, true))));
   return wrap;
@@ -1290,7 +1304,11 @@ function renderNeighborhoods(alive) {
       const data = await api(`/places/neighborhood?${params}`);
       if (!alive() || request !== sequence) return;
       for (const p of data.places) {
-        if (!seen.has(p.id)) { seen.add(p.id); results.append(placeCard(p)); }
+        if (!seen.has(p.id)) {
+          const priority = seen.size < 2;
+          seen.add(p.id);
+          results.append(placeCard(p, null, priority));
+        }
       }
       nextPageToken = data.nextPageToken;
       fill(status, el('p', { class: 'm', text: seen.size ? `${seen.size} résultat(s) pour « ${currentName} »` : 'Aucun restaurant trouvé pour cette recherche.' }));
@@ -1373,7 +1391,7 @@ async function renderSearch(alive) {
         if (!alive() || gQuery !== q || input.value.trim() !== q) return;
         fill(gSlot, el('div', { class: 't pad', style: 'margin:16px 0 2px' }, `Sur Google Maps · ${places.length}`),
           el('div', { class: 'list' }, places.map((p) => el('a', { href: `#/p/${encodeURIComponent(p.id)}`, onclick: () => rememberSearch(q) },
-            el('div', { style: 'width:40px' }, placePhoto(p.photo, 120, 40)),
+            el('div', { style: 'width:40px' }, placePhoto(p.photo, 120, 40, false)),
             el('span', { class: 'grow' }, el('div', null, highlight(p.name, q)), el('div', { class: 'm', text: [p.category !== 'restaurant' ? catInfo(p.category).label : (p.type_label || 'Restaurant'), fmtKm(p.distance_km), 'Bientôt sur Winged Eats'].filter(Boolean).join(' · ') })),
             I('right')))),
           places.length ? googleCredit() : el('p', { class: 'm pad', text: 'Aucun établissement trouvé.' }));
@@ -1552,7 +1570,7 @@ function mapCard(item, alive, onOpen) {
       el('div', { class: 'map-card-note', text: isGoogle ? 'Fiche Google · commande indisponible' : isOsm ? 'Fiche OpenStreetMap · commande indisponible' : 'Voir le restaurant' })));
   function loadPhoto() {
     if (isGoogle) {
-      fill(picture, placePhoto(item.photo, 600, null));
+      fill(picture, placePhoto(item.photo, 600, null, true));
     } else if (isOsm) {
       const view = photoFrame(null);
       fill(picture, view.frame);
@@ -2044,7 +2062,7 @@ async function renderPlace(id, alive) {
   const tel = p.phone ? String(p.phone).replace(/[^\d+]/g, '') : null;
   setView(
     el('div', { class: 'hero' },
-      p.photos.length ? el('div', { class: 'gal' }, p.photos.map((ph, i) => placePhoto(ph, 900, 220, p.photos.length > 1 ? el('span', { class: 'tag d', text: `${i + 1}/${p.photos.length}` }) : null))) : placePhoto(null, 900, 220),
+      p.photos.length ? el('div', { class: 'gal' }, p.photos.map((ph, i) => placePhoto(ph, 900, 220, i === 0, p.photos.length > 1 ? el('span', { class: 'tag d', text: `${i + 1}/${p.photos.length}` }) : null))) : placePhoto(null, 900, 220),
       el('div', { class: 'acts' }, el('button', { class: 'circ w', type: 'button', 'aria-label': 'Retour', onclick: () => goBack('#/') }, I('back')),
         favBtn(p.id, 'circ w'))),
     el('div', { class: 'pad', style: 'margin-top:-28px;position:relative' },
@@ -2085,6 +2103,25 @@ async function renderFavorites(alive) {
   if (!ids.length) return setView(head, emptyState('pou', 'Aucun favori', 'Enregistrez vos restaurants préférés sur cet appareil.', el('a', { class: 'btn', href: '#/', style: 'width:auto;display:inline-flex' }, 'Découvrir les restaurants')));
   const body = el('div', { class: 'vlist', 'aria-live': 'polite' });
   setView(head, el('p', { class: 'm pad', text: 'Favoris enregistrés sur cet appareil. Les fiches Google sont actualisées à l’ouverture.' }), body);
+  const slots = new Map(ids.map((id) => [id, el('div')]));
+  for (const id of ids) body.append(slots.get(id));
+  const googleIds = ids.filter((id) => typeof id === 'string');
+  let nextGoogleId = 0;
+  const googleWorkers = Array.from({ length: Math.min(4, googleIds.length) }, async () => {
+    while (alive() && nextGoogleId < googleIds.length) {
+      const index = nextGoogleId++;
+      const id = googleIds[index];
+      const slot = slots.get(id);
+      try {
+        const place = await gDetails(id, origin);
+        if (!alive()) return;
+        fill(slot, placeCard(place, route, index < 2));
+      } catch (e) {
+        if (!alive()) return;
+        fill(slot, alertBox(`Impossible de charger un favori Google : ${e.message}`), favBtn(id, 'chip', route));
+      }
+    }
+  });
   let partners = [];
   let partnerError = null;
   if (ids.some((id) => typeof id === 'number')) {
@@ -2093,8 +2130,8 @@ async function renderFavorites(alive) {
   if (!alive()) return;
   for (const id of ids) {
     if (!alive()) return;
-    const slot = el('div');
-    body.append(slot);
+    if (typeof id === 'string') continue;
+    const slot = slots.get(id);
     if (typeof id === 'number') {
       if (partnerError) {
         fill(slot, alertBox(`Impossible de charger un restaurant favori : ${partnerError.message}`), el('button', { class: 'btn lt', type: 'button', onclick: route }, 'Réessayer'));
@@ -2102,20 +2139,10 @@ async function renderFavorites(alive) {
       }
       const partner = partners.find((r) => r.id === id);
       if (partner) { fill(slot, partnerCard(partner, route)); continue; }
-    } else if (typeof id === 'string') {
-      try {
-        const place = await gDetails(id, origin);
-        if (!alive()) return;
-        fill(slot, placeCard(place, route));
-        continue;
-      } catch (e) {
-        if (!alive()) return;
-        fill(slot, alertBox(`Impossible de charger un favori Google : ${e.message}`), favBtn(id, 'chip', route));
-        continue;
-      }
     }
     fill(slot, alertBox('Ce restaurant favori est indisponible.'), favBtn(id, 'chip', route));
   }
+  await Promise.all(googleWorkers);
   if (ids.some((id) => typeof id === 'string')) body.append(googleCredit());
 }
 
