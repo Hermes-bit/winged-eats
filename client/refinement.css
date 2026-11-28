@@ -15,6 +15,59 @@
 
 body.nonav #app { padding-bottom: 100px; }
 body.bare #app { padding-bottom: 0; }
+.launch-screen { position: fixed; inset: 0; z-index: 500; display: grid; place-items: center; overflow: hidden; background: #d94030; color: #fff; transition: opacity .3s ease, visibility .3s ease; }
+.launch-screen::before, .launch-screen::after { content: ''; position: absolute; width: 420px; height: 420px; border: 1px solid #ffffff24; border-radius: 50%; pointer-events: none; }
+.launch-screen::before { top: -260px; right: -190px; }
+.launch-screen::after { bottom: -285px; left: -160px; }
+.launch-screen.leaving { opacity: 0; visibility: hidden; pointer-events: none; }
+.launch-content { text-align: center; animation: launch-appear .65s ease both; }
+.launch-logo { width: 96px; height: 96px; }
+.launch-wordmark { margin-top: 21px; font-size: 34px; font-weight: 850; line-height: 1.2; letter-spacing: -.045em; }
+.launch-wordmark span { font-weight: 500; }
+.launch-content p { margin: 14px 0 0; color: #ffe8de; font-size: 14px; letter-spacing: .04em; }
+.launch-footer { position: absolute; bottom: calc(28px + env(safe-area-inset-bottom)); color: #ffdfd4; font-size: 12px; }
+@keyframes launch-appear { from { opacity: 0; transform: translateY(12px) scale(.96); } to { opacity: 1; transform: none; } }
+.welcome-screen { min-height: 100dvh; display: flex; flex-direction: column; background: #fff; color: #24201d; }
+.welcome-hero { position: relative; display: flex; flex: 1; flex-direction: column; justify-content: space-between; min-height: 420px; padding: calc(28px + env(safe-area-inset-top)) 26px 30px; color: #fff; background: linear-gradient(0deg, #20140ce8, transparent 60%), url('search-images/blackened-chicken-with.webp') center / cover; }
+.welcome-brand { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 800; }
+.welcome-brand svg { flex: none; }
+.welcome-badge { display: inline-block; padding: 7px 10px; border: 1px solid #ffffff99; border-radius: 30px; font-size: 10px; font-weight: 800; letter-spacing: .09em; }
+.welcome-copy h1 { margin: 13px 0 0; color: #fff; font-size: 32px; font-weight: 800; line-height: 1.08; letter-spacing: -.04em; }
+.welcome-copy p { margin: 11px 0 0; color: #f5eae2; font-size: 14px; line-height: 1.45; }
+.welcome-image-note { display: block; margin-top: 8px; color: #f5eae2; font-size: 10px; }
+.welcome-actions { padding: 25px 26px calc(22px + env(safe-area-inset-bottom)); background: #fff; }
+.welcome-screen.intro-first .welcome-actions { animation: welcome-enter .45s .95s ease both; }
+.welcome-button { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 52px; border: 0; border-radius: 15px; background: #d94030; color: #fff; font-size: 15px; font-weight: 800; cursor: pointer; }
+.welcome-button:disabled { opacity: .58; cursor: not-allowed; }
+.welcome-guest-link { display: block; width: 100%; padding: 13px 0; border: 0; background: transparent; color: #544a43; text-align: center; font-size: 13px; font-weight: 700; cursor: pointer; }
+.welcome-hint { margin: 2px 6px 0; color: #81766f; text-align: center; font-size: 10px; line-height: 1.4; }
+@keyframes welcome-enter { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+.signin-screen { min-height: 100dvh; display: flex; flex-direction: column; padding: calc(28px + env(safe-area-inset-top)) 26px calc(24px + env(safe-area-inset-bottom)); background: #fff; color: #24201d; }
+.signin-back { display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 50%; background: #f5f2ee; color: #24201d; cursor: pointer; }
+.signin-icon { display: grid; place-items: center; width: 54px; height: 54px; margin-top: 36px; border-radius: 18px; background: #fae9e4; color: #c93728; }
+.signin-screen h1 { margin: 19px 0 10px; font-size: 28px; font-weight: 800; line-height: 1.12; letter-spacing: -.045em; }
+.signin-description { margin: 0; color: #716760; font-size: 14px; line-height: 1.5; }
+.signin-label { display: block; margin-top: 30px; font-size: 12px; font-weight: 800; }
+.signin-phone { display: flex; align-items: center; height: 57px; margin: 9px 0 12px; border: 1.5px solid #e1dcd6; border-radius: 14px; font-size: 15px; }
+.signin-prefix { flex: none; padding: 0 13px; border-right: 1px solid #e6e1dc; font-weight: 800; }
+.signin-phone input { width: 100%; height: 100%; padding: 0 13px; border: 0; background: transparent; font-size: 16px; }
+.signin-phone input:disabled { color: #aaa09a; opacity: 1; -webkit-text-fill-color: #aaa09a; }
+.signin-phone input::placeholder { color: #aaa09a; opacity: 1; }
+.signin-small { margin: 0; color: #716760; font-size: 12px; line-height: 1.5; }
+.signin-screen .welcome-button { margin-top: 27px; }
+.signin-preview { align-self: center; margin-top: 12px; padding: 4px; border: 0; background: transparent; color: #a93628; font-size: 12px; font-weight: 700; cursor: pointer; }
+.signin-code { display: flex; gap: 11px; margin: 9px 0 0; }
+.signin-code span { display: grid; place-items: center; flex: 1; height: 58px; border: 1.5px solid #e5dfd9; border-radius: 13px; color: #a39992; font-size: 20px; }
+.signin-code span:first-child { border-color: #d94030; }
+.signin-resend { align-self: flex-start; margin: 22px 0 10px; padding: 0; border: 0; background: transparent; color: #8b817a; font-size: 13px; font-weight: 800; }
+.signin-separator { display: flex; align-items: center; gap: 10px; margin: 22px 0 17px; color: #9c928a; font-size: 11px; }
+.signin-separator::before, .signin-separator::after { content: ''; flex: 1; height: 1px; background: #eee9e4; }
+.signin-screen .signin-guest { margin-top: 0; border: 1px solid #e8e1db; background: #fff; color: #2a2521; }
+.signin-bottom { margin: auto 0 0; padding-top: 26px; color: #81766f; text-align: center; font-size: 11px; line-height: 1.4; }
+@media (prefers-reduced-motion: reduce) {
+  .launch-screen { transition: none; }
+  .launch-content, .welcome-screen.intro-first .welcome-actions { animation: none; }
+}
 .pad { padding-left: 20px; padding-right: 20px; }
 .sec { padding: 26px 20px 12px; }
 .chips, .cats, .hs, .vlist, .mini { padding-left: 20px; padding-right: 20px; }

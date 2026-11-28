@@ -340,7 +340,7 @@ body.nonav .toasts,body.bare .toasts{bottom:96px}
 .mrow .ftw .ft{border-radius:14px}
 @media(max-width:350px){.banner-copy{max-width:70%}.banner .bt{font-size:21px}.hs{grid-auto-columns:58%}}
 </style>
-<link rel="stylesheet" href="refinement.css?v=21">
+<link rel="stylesheet" href="refinement.css?v=22">
 </head>
 <body class="bare">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -395,6 +395,15 @@ body.nonav .toasts,body.bare .toasts{bottom:96px}
 
 <main id="app"></main>
 
+<div id="launch-screen" class="launch-screen" role="status" aria-label="Ouverture de Winged Eats">
+  <div class="launch-content">
+    <svg class="launch-logo" aria-hidden="true"><use href="#logo"></use></svg>
+    <div class="launch-wordmark">Winged <span>Eats</span></div>
+    <p>Vos bonnes adresses, tout près.</p>
+  </div>
+  <span class="launch-footer">Préparé avec soin pour vous</span>
+</div>
+
 <nav class="nb" id="nb" aria-label="Navigation principale">
   <a href="#/" data-s="home" data-i="home" aria-label="Accueil"><span>Accueil</span></a>
   <a href="#/map" data-s="map" data-i="pin" aria-label="À emporter"><span>À emporter</span></a>
@@ -406,6 +415,6 @@ body.nonav .toasts,body.bare .toasts{bottom:96px}
 
 <script src="open-map.js?v=6"></script>
 <script src="osm-places.js?v=8"></script>
-<script src="app.js?v=28"></script>
+<script src="app.js?v=29"></script>
 </body>
 </html>

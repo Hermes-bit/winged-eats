@@ -501,6 +501,81 @@ function googleBlock({ title, sub, layout = 'hs', load, transform = (l) => l, em
 // Connexion et adresse
 // ---------------------------------------------------------------------
 
+let introActive = false;
+let configReady = false;
+
+function showBootLoading() {
+  chrome('bare');
+  setView(el('div', { class: 'pad', style: 'padding-top:calc(30px + env(safe-area-inset-top))', role: 'status', text: 'Chargement de Winged Eats…' }));
+}
+
+function enterAsGuest() {
+  const saved = store.set('we_intro_seen', true);
+  introActive = false;
+  if (!saved) toast("Ce choix ne peut pas être enregistré sur cet appareil.", 'info');
+  if (location.hash === '#/connexion') {
+    location.hash = '#/';
+  } else if (configReady) {
+    route();
+  } else {
+    showBootLoading();
+  }
+}
+
+function renderWelcome(first = false) {
+  chrome('bare');
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  setView(el('div', { class: first ? 'welcome-screen intro-first' : 'welcome-screen' },
+    el('div', { class: 'welcome-hero' },
+      el('div', { class: 'welcome-brand' }, logo(39), el('span', { text: 'Winged Eats' })),
+      el('div', { class: 'welcome-copy' },
+        el('span', { class: 'welcome-badge', text: 'À OUAGA ET À BOBO' }),
+        el('h1', null, 'De belles adresses,', el('br'), 'à portée de main.'),
+        el('p', { text: 'Explorez les restaurants autour de vous et retrouvez vos favoris.' }),
+        el('span', { class: 'welcome-image-note', text: 'Image illustrative' }))),
+    el('div', { class: 'welcome-actions' },
+      el('button', { class: 'welcome-button', type: 'button', onclick: renderSignIn }, 'Commencer', el('span', { 'aria-hidden': 'true', text: '→' })),
+      el('button', { class: 'welcome-guest-link', type: 'button', onclick: enterAsGuest }, 'Continuer sans compte'),
+      el('p', { class: 'welcome-hint', text: 'La connexion et la commande seront disponibles après leur mise en place.' }))));
+}
+
+function renderSignIn() {
+  chrome('bare');
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  setView(el('div', { class: 'signin-screen' },
+    el('button', { class: 'signin-back', type: 'button', 'aria-label': 'Retour', onclick: () => { if (introActive) renderWelcome(); else goBack('#/account'); } }, I('back')),
+    el('div', { class: 'signin-icon', 'aria-hidden': 'true' }, I('phone')),
+    el('h1', null, 'On fait', el('br'), 'connaissance ?'),
+    el('p', { class: 'signin-description', text: 'Connectez-vous avec votre numéro de téléphone pour retrouver votre compte.' }),
+    el('label', { class: 'signin-label', for: 'signin-phone' }, 'Numéro de téléphone'),
+    el('div', { class: 'signin-phone' },
+      el('span', { class: 'signin-prefix', text: '🇧🇫  +226' }),
+      el('input', { id: 'signin-phone', type: 'tel', inputmode: 'tel', autocomplete: 'tel-national', placeholder: '70 00 00 00', disabled: true, 'aria-describedby': 'signin-notice' })),
+    el('p', { class: 'signin-small', id: 'signin-notice', text: 'La connexion par SMS arrive bientôt. Aucun code ne sera envoyé pour le moment.' }),
+    el('button', { class: 'welcome-button', type: 'button', disabled: true }, 'Continuer', el('span', { 'aria-hidden': 'true', text: '→' })),
+    el('button', { class: 'signin-preview', type: 'button', onclick: renderVerificationPreview }, 'Aperçu de la vérification SMS'),
+    el('div', { class: 'signin-separator', text: 'ou' }),
+    el('button', { class: 'welcome-button signin-guest', type: 'button', onclick: enterAsGuest }, 'Explorer sans compte'),
+    el('p', { class: 'signin-bottom', text: 'Votre numéro reste privé. Un code ne sera jamais demandé par téléphone.' })));
+}
+
+function renderVerificationPreview() {
+  chrome('bare');
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  setView(el('div', { class: 'signin-screen' },
+    el('button', { class: 'signin-back', type: 'button', 'aria-label': 'Retour', onclick: renderSignIn }, I('back')),
+    el('div', { class: 'signin-icon', 'aria-hidden': 'true', text: '✦' }),
+    el('h1', null, 'Un petit code,', el('br'), "et c'est parti."),
+    el('p', { class: 'signin-description', text: 'La vérification par SMS sera disponible après sa configuration.' }),
+    el('div', { class: 'signin-label', text: 'Code de vérification' }),
+    el('div', { class: 'signin-code', 'aria-label': 'Aperçu du code de vérification' },
+      [0, 1, 2, 3].map(() => el('span', { 'aria-hidden': 'true', text: '•' }))),
+    el('button', { class: 'welcome-button', type: 'button', disabled: true }, 'Valider mon code', el('span', { 'aria-hidden': 'true', text: '→' })),
+    el('button', { class: 'signin-resend', type: 'button', disabled: true }, 'Renvoyer le code'),
+    el('p', { class: 'signin-small', text: 'Aucun SMS n’a été envoyé : cet écran est un aperçu.' }),
+    el('p', { class: 'signin-bottom', text: 'La connexion sera activée après la mise en place du service SMS.' })));
+}
+
 function chooseOrigin(origin, close) {
   store.set('we_origin', origin);
   if (close) close();
@@ -2122,6 +2197,7 @@ function renderAccount() {
         el('div', { class: 'm', text: profile.phone || 'Restaurants et favoris' })),
       el('div', { class: 'av', style: 'width:56px;height:56px;font-size:18px' }, ini || I('user'))),
     el('div', { class: 'list', style: 'margin-top:6px' },
+      row('user', 'Se connecter', 'Connexion par SMS bientôt disponible', () => { location.hash = '#/connexion'; }),
       row('pin', 'Ville', origin ? `${cityOf(origin).name} · ${origin.label}` : 'Non choisie', () => zoneSheet((origin && origin.city) || 'ouaga'), el('span', { class: 'chip', style: 'font-size:11px', text: 'Changer' })),
       row('globe', 'Langue', 'Français · Mooré et Dioula bientôt', () => infoSheet('Langue', [['Français', 'Langue actuelle de l’application.'], ['Mooré', 'Traduction en préparation.'], ['Dioula', 'Traduction en préparation.']])),
       row('heart', 'Mes favoris', 'Restaurants enregistrés sur cet appareil', () => { location.hash = '#/favorites'; }),
@@ -2130,7 +2206,7 @@ function renderAccount() {
         class: 'btn lt', type: 'button', style: 'margin-top:14px;color:var(--red2)',
         onclick: async () => {
           if (!(await confirmSheet({ title: 'Effacer les données ?', text: 'Adresse, panier, favoris et liste de commandes seront supprimés de cet appareil.', ok: 'Tout effacer' }))) return;
-          ['we_origin', 'we_cart', 'we_orders', 'we_order_meta', 'we_profile', 'we_favs', 'we_recent'].forEach((k) => store.remove(k));
+          ['we_origin', 'we_cart', 'we_orders', 'we_order_meta', 'we_profile', 'we_favs', 'we_recent', 'we_intro_seen'].forEach((k) => store.remove(k));
           cache.clear(); closeAllSheets(); location.hash = '#/'; route();
         },
       }, 'Effacer les données de cet appareil')))),
@@ -2142,7 +2218,7 @@ const HELP = [
   ['Comment retrouver un restaurant ?', 'Utilisez la recherche, la carte ou vos favoris.'],
 ];
 const PRIVACY = [
-  ['Sur cet appareil', 'Adresse, panier, favoris, recherches et liste de vos commandes.'],
+  ['Sur cet appareil', 'Adresse, panier, favoris, recherches, liste de vos commandes et préférence de bienvenue.'],
   ['Restaurants de la ville', 'Les favoris Google conservent uniquement leur identifiant sur cet appareil ; noms, notes, horaires et photos sont chargés en direct.'],
 ];
 
@@ -2207,6 +2283,7 @@ function route() {
   if (a === 'map') return renderMap(alive, b ? decodeURIComponent(b) : null);
   if (a === 'offres') return renderOffres(alive);
   if (a === 'account') return renderAccount();
+  if (a === 'connexion') return renderSignIn();
   if (a === 'livreur') return renderRider();
   if (a === 'abonnement') return renderSubscription(b === 'l' ? 'l' : 'r');
   if (a === 'login') return renderLogin();
@@ -2214,16 +2291,31 @@ function route() {
 }
 
 document.querySelectorAll('#nb a').forEach((a) => a.prepend(I(a.dataset.i)));
-window.addEventListener('hashchange', () => { navCount += 1; route(); });
+window.addEventListener('hashchange', () => {
+  navCount += 1;
+  introActive = false;
+  if (configReady) route(); else showBootLoading();
+});
 navCount = 0;
 (async function boot() {
+  const launch = document.getElementById('launch-screen');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  main.inert = true;
+  const finishLaunch = () => {
+    launch.classList.add('leaving');
+    setTimeout(() => { launch.remove(); main.inert = false; }, reducedMotion ? 0 : 300);
+  };
+  setTimeout(finishLaunch, reducedMotion ? 0 : 1100);
+  introActive = !store.get('we_intro_seen', false) && ['', '#/', '#/login'].includes(location.hash);
+  if (introActive) renderWelcome(true); else showBootLoading();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8000);
   try {
     appConfig = await api('/config', { signal: controller.signal });
     if (!appConfig.google.places) googleError = 'Google Places n’est pas configuré sur le serveur.';
   } catch (e) { googleError = e.message; } finally { clearTimeout(timer); }
-  route();
+  configReady = true;
+  if (!introActive) route();
   // Application installable (PWA) : l'interface reste disponible hors connexion.
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => { /* navigation privée, http… */ });
 }());
