@@ -203,6 +203,7 @@ body.bare #app { padding-bottom: 0; }
 .zone-filter:focus { outline: 2px solid #a93628; outline-offset: 1px; }
 .zone-source { margin: 0 0 8px; }
 .zone-source a { text-decoration: underline; }
+.neighborhood-suggestions { display: flex; flex-wrap: wrap; gap: 8px; max-height: 180px; overflow-y: auto; margin-top: 12px; }
 .zone-drag-handle { display: block; width: 100%; padding: 8px 0 12px; border: 0; background: transparent; touch-action: none; cursor: pointer; }
 .zone-drag-handle:focus-visible { outline: 2px solid #a93628; outline-offset: -2px; }
 .zone-drag-handle .grab { display: block; margin: 0 auto; }

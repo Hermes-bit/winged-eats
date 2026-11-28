@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Administration · Winged Eats</title>
+  <link rel="stylesheet" href="style.css?v=1">
+  <script src="app.js?v=1" defer></script>
+</head>
+<body>
+  <header><div class="brand">Winged <span>Eats</span><small>ADMINISTRATION</small></div><button id="logout" class="secondary" hidden>Déconnexion</button></header>
+  <main>
+    <section id="login" class="panel login">
+      <p class="eyebrow">ESPACE PRIVÉ</p>
+      <h1>Bienvenue</h1>
+      <p>Connectez-vous pour contrôler les restaurants affichés dans Winged Eats.</p>
+      <form id="login-form">
+        <label>Adresse e-mail<input id="email" type="email" autocomplete="username" required></label>
+        <label>Mot de passe<input id="password" type="password" autocomplete="current-password" required></label>
+        <button type="submit">Se connecter</button>
+      </form>
+    </section>
+    <section id="dashboard" hidden>
+      <p class="eyebrow">QUALITÉ DU CATALOGUE</p>
+      <h1>Restaurants</h1>
+      <p>Recherchez un quartier, vérifiez les fiches Google et choisissez ce qui apparaît dans l’application.</p>
+      <div class="notice">Les photos et les fiches proviennent de Google. Vous pouvez masquer toutes les photos d’un restaurant, mais pas conserver le choix d’une photo précise. Les modifications ne changent pas Google Maps ni les données OpenStreetMap.</div>
+      <form id="search-form" class="search panel">
+        <label>Quartier à examiner<input id="query" type="search" placeholder="Ex. Zogona, Gounghin…" minlength="2" maxlength="80" required></label>
+        <button type="submit">Rechercher</button>
+      </form>
+      <p id="count" aria-live="polite"></p>
+      <div id="results" class="results"></div>
+      <button id="more" class="secondary" hidden>Afficher plus de résultats</button>
+      <section class="decisions panel">
+        <h2>Décisions enregistrées</h2>
+        <p>Retrouvez les fiches masquées, même si elles n’apparaissent plus dans les résultats.</p>
+        <button id="load-decisions" class="secondary">Afficher les décisions</button>
+        <div id="decisions"></div>
+        <button id="more-decisions" class="secondary" hidden>Afficher les décisions suivantes</button>
+      </section>
+      <p class="credit">Données et photos : Google Maps. Résultats susceptibles d’inclure des adresses voisines.</p>
+    </section>
+    <p id="message" role="status" aria-live="polite"></p>
+  </main>
+</body>
+</html>

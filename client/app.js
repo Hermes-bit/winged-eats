@@ -229,7 +229,10 @@ function photoFrame(h, ...children) {
 function placePhoto(photo, w, h, ...children) {
   const view = photoFrame(h, ...children);
   if (photo) view.show(`${PLACES_SERVER}/api/places/photo?name=${encodeURIComponent(photo.name)}&w=${w}`, () => {
-    if (photo.author) view.frame.append(el('span', { class: 'credit', text: `© ${photo.author}` }));
+    const authors = photo.authors?.length ? photo.authors : photo.author ? [{ name: photo.author, uri: photo.author_uri }] : [];
+    if (authors.length) view.frame.append(el('span', { class: 'credit' }, '© ', authors.map((author, i) => [
+      i ? ', ' : '', author.uri ? el('a', { href: author.uri, target: '_blank', rel: 'noopener noreferrer', text: author.name }) : author.name,
+    ])));
   });
   return view.frame;
 }
@@ -1196,6 +1199,7 @@ function renderNeighborhoods(alive) {
   const results = el('div', { class: 'vlist', 'aria-live': 'polite' });
   const status = el('div', { class: 'pad', 'aria-live': 'polite' });
   const more = el('div', { class: 'pad' });
+  const suggestions = el('div', { class: 'neighborhood-suggestions', 'aria-label': 'Quartiers disponibles' });
   let sequence = 0;
   let nextPageToken = null;
   let currentName = '';
@@ -1232,17 +1236,28 @@ function renderNeighborhoods(alive) {
     }
     currentName = value;
     input.value = value;
+    showSuggestions();
     nextPageToken = null;
     seen.clear();
     fill(results);
     load();
   }
+  function showSuggestions() {
+    const query = fold(input.value.trim());
+    const zones = CITIES.ouaga.zones.filter((zone) =>
+      [zone.name, ...(zone.aliases || [])].some((name) => fold(name).includes(query)));
+    fill(suggestions, zones.length
+      ? zones.map((zone) => el('button', { class: 'chip', type: 'button', onclick: () => { input.blur(); search(zone.name); } }, zone.name))
+      : el('p', { class: 'm', text: 'Quartier absent de la liste ? Saisissez son nom et appuyez sur Chercher.' }));
+  }
+  input.addEventListener('input', showSuggestions);
+  showSuggestions();
   setView(topbar('Restaurants par quartier', { back: '#/' }),
     el('div', { class: 'pad' },
       el('p', { class: 'm', text: 'Recherchez un quartier de Ouagadougou. Google peut inclure des adresses voisines et ne garantit pas une liste exhaustive.' }),
       googleOn()
         ? [el('form', { class: 'fl search-form', role: 'search', onsubmit: (e) => { e.preventDefault(); search(input.value); input.blur(); } }, I('search'), input, el('button', { class: 'chip', type: 'submit' }, 'Chercher')),
-          el('div', { class: 'chips', style: 'margin-top:12px' }, CITIES.ouaga.zones.slice(0, 5).map((zone) => el('button', { class: 'chip', type: 'button', onclick: () => search(zone.name) }, zone.name)))]
+          suggestions]
         : alertBox('La recherche Google est indisponible. Réessayez plus tard.')),
     status, results, more, googleCredit());
 }
