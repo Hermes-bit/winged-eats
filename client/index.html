@@ -126,6 +126,7 @@ body.nonav .nb,body.bare .nb{display:none}
 .av{width:44px;height:44px;border-radius:50%;background:var(--gold);display:grid;place-items:center;font-weight:800;color:var(--ink2);flex:none}
 .circ{width:40px;height:40px;border-radius:50%;background:var(--chip);display:grid;place-items:center;flex:none;border:0;cursor:pointer;color:var(--ink);position:relative}
 .circ.w{background:#fff;box-shadow:0 2px 8px #2a171222}
+.circ.on{color:var(--red)}.circ.on .ic{fill:currentColor}
 .circ .dot{position:absolute;top:7px;right:8px;width:9px;height:9px;border-radius:50%;background:var(--red);border:2px solid var(--chip)}
 .kp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .kp>div{background:var(--soft);border-radius:12px;padding:9px 10px}
@@ -405,6 +406,6 @@ body.nonav .toasts,body.bare .toasts{bottom:96px}
 <script src="../shared/demo-api.js?v=6"></script>
 <script src="open-map.js?v=6"></script>
 <script src="osm-places.js?v=7"></script>
-<script src="app.js?v=9"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>
