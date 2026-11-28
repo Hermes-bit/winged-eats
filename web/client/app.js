@@ -42,12 +42,13 @@ const STATUS = {
 };
 const STEP_LABELS = ['Acceptée', 'En préparation', 'Prête', 'Livrée'];
 
-// Plats illustrés de la maquette : riz gras, brochettes, poulet, tô, pizza, burger, bissap, poisson.
+// Plats et boissons illustrés de la maquette.
 const DISH_KEYS = [
   [/brochette|grill|kebab|dibi/i, 'bro'], [/poulet|ailes|chicken|bicyclette|choukouya/i, 'pou'],
   [/poisson|capitaine|tilapia|attiéké|attieke/i, 'poi'], [/pizza/i, 'piz'],
   [/burger|sandwich|frite|tacos|chawarma|shawarma|fast/i, 'bur'],
-  [/bissap|jus|bière|biere|boisson|zoom|gingembre|\beau\b|soda|café|cafe|thé|glace|dêguê|degue/i, 'bis'],
+  [/bière|biere/i, 'beer'],
+  [/bissap|jus|boisson|zoom|gingembre|\beau\b|soda|café|cafe|thé|glace|dêguê|degue/i, 'bis'],
   [/\btô\b|gombo|sauce|soupe|feuille|babenda/i, 'to'], [/riz/i, 'riz'],
 ];
 const CAT_FOOD = {

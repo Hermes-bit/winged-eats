@@ -184,6 +184,9 @@ body.bare #app { padding-bottom: 0; }
 .cat .ft { border-radius: 50%; }
 .rc .ft { border-radius: 18px; }
 .rc .t { font-size: 15px; }
+.mini button { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; }
+.mini .n { line-height: 1.4; min-height: 2.8em; }
+.k-beer { background: #e8d2a7; }
 .search-header { padding-top: calc(26px + env(safe-area-inset-top)); }
 .search-title { margin: 0; font-size: 27px; letter-spacing: -.04em; line-height: 1.15; }
 .search-header p { margin: 8px 0 16px; }
