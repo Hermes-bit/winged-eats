@@ -93,7 +93,6 @@ const orderDate = (s) => new Date(String(s).replace(' ', 'T') + 'Z');
 const dishKey = (name, fallback = 'riz') => (DISH_KEYS.find(([re]) => re.test(name)) || [null, fallback])[1];
 const catKeyOf = (r) => PARTNER_CAT_KEY[r.category] || 'restaurant';
 const restoKey = (r) => dishKey(displayName(r.name), CAT_FOOD[catKeyOf(r)]);
-const placeKey = (p) => dishKey(p.name, CAT_FOOD[p.category] || 'riz');
 function initials(name) {
   const stop = ['chez', 'maquis', 'restaurant', 'resto'];
   const words = displayName(name).split(/[\s'’-]+/).filter((w) => w && !stop.includes(w.toLowerCase()));
@@ -137,19 +136,36 @@ const I = (name) => useSvg(`i-${name}`, 'ic');
 const S = () => useSvg('i-star', 'ic star');
 const logo = (size = 40) => { const s = useSvg('logo'); s.style.width = `${size}px`; s.style.height = `${size}px`; return s; };
 
-// Vignette illustrée (plat) ; une photo Google la recouvre si elle est disponible.
+// Vignette illustrée pour les contenus sans photo réelle.
 function F(k, h, ...children) {
   const d = el('div', { class: `ft k-${k}`, style: h ? `height:${h}px` : null });
   d.append(...children.flat().filter(Boolean), useSvg(`f-${k}`));
   return d;
 }
 const PLACES_SERVER = 'https://winged-eats-1.onrender.com';
-function photoImg(photo, w) {
-  if (!photo) return null;
-  const img = el('img', { class: 'ph', src: `${PLACES_SERVER}/api/places/photo?name=${encodeURIComponent(photo.name)}&w=${w}`, alt: '', loading: 'lazy', decoding: 'async' });
-  const credit = photo.author ? el('span', { class: 'credit', text: `© ${photo.author}` }) : null;
-  img.addEventListener('error', () => { img.remove(); if (credit) credit.remove(); });
-  return [img, credit];
+function photoFrame(h, ...children) {
+  const status = el('span', { class: 'photo-status', text: 'Photo indisponible' });
+  const frame = el('div', { class: 'ft place-photo', style: h ? `height:${h}px` : null }, status, ...children);
+  return {
+    frame,
+    loading: () => { status.textContent = 'Chargement de la photo…'; },
+    unavailable: () => { status.textContent = 'Photo indisponible'; },
+    show(url, onLoad) {
+      status.textContent = 'Chargement de la photo…';
+      const img = el('img', { class: 'ph', alt: '', loading: 'lazy', decoding: 'async' });
+      img.addEventListener('load', () => { status.hidden = true; if (onLoad) onLoad(); });
+      img.addEventListener('error', () => { img.remove(); status.textContent = 'Photo indisponible'; status.hidden = false; });
+      frame.append(img);
+      img.src = url;
+    },
+  };
+}
+function placePhoto(photo, w, h, ...children) {
+  const view = photoFrame(h, ...children);
+  if (photo) view.show(`${PLACES_SERVER}/api/places/photo?name=${encodeURIComponent(photo.name)}&w=${w}`, () => {
+    if (photo.author) view.frame.append(el('span', { class: 'credit', text: `© ${photo.author}` }));
+  });
+  return view.frame;
 }
 
 async function api(path, options = {}) {
@@ -346,7 +362,7 @@ function partnerCard(r, onFavoriteChange = null) {
 function placeCard(p, onFavoriteChange = null) {
   const label = p.category !== 'restaurant' ? catInfo(p.category).label : (p.type_label || 'Restaurant');
   return el('article', { class: 'rc' },
-    F(placeKey(p), null, el('span', { class: 'tag g', text: 'Bientôt' }), photoImg(p.photo, 480), favBtn(p.id, 'heart', onFavoriteChange)),
+    placePhoto(p.photo, 480, null, el('span', { class: 'tag g', text: 'Bientôt' }), favBtn(p.id, 'heart', onFavoriteChange)),
     el('div', { class: 't ell', text: p.name }),
     el('div', { class: 'm ell' }, p.rating ? [S(), el('b', { style: 'color:#22150F', text: ` ${fmtRating(p.rating)}` }), ` (${num(p.rating_count)})`] : 'Pas encore noté',
       p.distance_km !== null ? ` · ${fmtKm(p.distance_km)}` : ''),
@@ -1145,7 +1161,7 @@ async function renderSearch(alive) {
         if (!alive() || gQuery !== q || input.value.trim() !== q) return;
         fill(gSlot, el('div', { class: 't pad', style: 'margin:16px 0 2px' }, `Sur Google Maps · ${places.length}`),
           el('div', { class: 'list' }, places.map((p) => el('a', { href: `#/p/${encodeURIComponent(p.id)}`, onclick: () => rememberSearch(q) },
-            el('div', { style: 'width:40px' }, F(placeKey(p), 40, photoImg(p.photo, 120))),
+            el('div', { style: 'width:40px' }, placePhoto(p.photo, 120, 40)),
             el('span', { class: 'grow' }, el('div', null, highlight(p.name, q)), el('div', { class: 'm', text: [p.category !== 'restaurant' ? catInfo(p.category).label : (p.type_label || 'Restaurant'), fmtKm(p.distance_km), 'Bientôt sur Winged Eats'].filter(Boolean).join(' · ') })),
             I('right')))),
           places.length ? googleCredit() : el('p', { class: 'm pad', text: 'Aucun établissement trouvé.' }));
@@ -1297,7 +1313,7 @@ async function renderGoogleMap(origin, alive, target = null) {
     function show(p, count) {
       fill(sheet, el('div', { class: 'grab' }),
         p ? el('a', { class: 'fl', href: `#/p/${encodeURIComponent(p.id)}`, style: 'gap:10px' },
-          el('div', { style: 'width:96px' }, F(placeKey(p), 70, photoImg(p.photo, 240))),
+          el('div', { style: 'width:96px' }, placePhoto(p.photo, 240, 70)),
           el('div', { style: 'flex:1' }, el('div', { class: 't', text: p.name }),
             el('div', { class: 'm', text: [p.address, p.rating ? `★ ${fmtRating(p.rating)}` : null, p.open_now === true ? 'Ouvert' : p.open_now === false ? 'Fermé' : null].filter(Boolean).join(' · ') }),
             el('span', { class: 'soonp', text: 'Voir la fiche du restaurant' })), I('right'))
@@ -1400,11 +1416,11 @@ async function renderMap(alive, placeId = null) {
   const paintSheet = () => {
     const it = all.find((x) => x.id === selected) || visible()[0];
     if (it?.kind === 'osm') {
-      const picture = F(dishKey(it.cuisine || it.name), 70);
+      const picture = photoFrame(70);
       const attribution = el('div', { class: 'm', style: 'font-size:10px' });
       fill(sheet, el('div', { class: 'grab' }),
         el('div', { class: 'fl', style: 'align-items:flex-start;gap:10px' },
-          el('div', { style: 'width:96px' }, picture),
+          el('div', { style: 'width:96px' }, picture.frame),
           el('div', { style: 'flex:1' },
             el('div', { class: 't', text: it.name }),
             el('div', { class: 'm', text: [it.cuisine, fmtKm(it.km), it.address].filter(Boolean).join(' · ') }),
@@ -1416,14 +1432,15 @@ async function renderMap(alive, placeId = null) {
         el('div', { class: 'm', style: 'font-size:10px' }, `${osmStatus} · `,
           el('a', { href: 'https://www.openstreetmap.org/copyright', target: '_blank', rel: 'noopener noreferrer', text: '© contributeurs OpenStreetMap' })));
       if (it.commons) {
+        picture.loading();
         WEOSM.photo(it.commons).then((photo) => {
-          if (!alive() || !picture.isConnected || !photo) return;
-          const image = el('img', { class: 'ph', src: photo.imageUrl, alt: '', loading: 'lazy' });
-          image.addEventListener('error', () => { image.remove(); attribution.textContent = 'Photo indisponible.'; });
-          picture.append(image);
-          fill(attribution, 'Photo : ', el('a', { href: photo.fileUrl, target: '_blank', rel: 'noopener noreferrer', text: photo.author }), ' · ',
-            el('a', { href: photo.licenseUrl, target: '_blank', rel: 'noopener noreferrer', text: photo.license }));
-        }).catch(() => { if (alive() && attribution.isConnected) attribution.textContent = 'Photo indisponible.'; });
+          if (!alive() || !picture.frame.isConnected) return;
+          if (!photo) return picture.unavailable();
+          picture.show(photo.imageUrl, () => {
+            fill(attribution, 'Photo : ', el('a', { href: photo.fileUrl, target: '_blank', rel: 'noopener noreferrer', text: photo.author }), ' · ',
+              el('a', { href: photo.licenseUrl, target: '_blank', rel: 'noopener noreferrer', text: photo.license }));
+          });
+        }).catch(() => { if (alive() && picture.frame.isConnected) picture.unavailable(); });
       }
       return;
     }
@@ -1531,12 +1548,11 @@ async function renderPlace(id, alive) {
     return setView(topbar('Établissement'), el('div', { class: 'pad' }, alertBox(e.message), el('button', { class: 'btn', type: 'button', onclick: () => { cache.delete(`gd:${id}`); route(); } }, 'Réessayer')));
   }
   if (!alive()) return;
-  const k = placeKey(p);
   const label = p.category !== 'restaurant' ? catInfo(p.category).label : (p.type_label || 'Restaurant');
   const tel = p.phone ? String(p.phone).replace(/[^\d+]/g, '') : null;
   setView(
     el('div', { class: 'hero' },
-      p.photos.length ? el('div', { class: 'gal' }, p.photos.map((ph, i) => F(k, 220, photoImg(ph, 900), p.photos.length > 1 ? el('span', { class: 'tag d', text: `${i + 1}/${p.photos.length}` }) : null))) : F(k, 220),
+      p.photos.length ? el('div', { class: 'gal' }, p.photos.map((ph, i) => placePhoto(ph, 900, 220, p.photos.length > 1 ? el('span', { class: 'tag d', text: `${i + 1}/${p.photos.length}` }) : null))) : placePhoto(null, 900, 220),
       el('div', { class: 'acts' }, el('button', { class: 'circ w', type: 'button', 'aria-label': 'Retour', onclick: () => goBack('#/') }, I('back')),
         favBtn(p.id, 'circ w'))),
     el('div', { class: 'pad', style: 'margin-top:-28px;position:relative' },

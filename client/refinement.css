@@ -310,3 +310,7 @@ body .nb .badge { top: 2px; left: auto; right: 2px; }
 }
 .chip .ic { width: 18px; height: 18px; }
 .chip.on { background: var(--ink); color: #fff; }
+
+.place-photo { background: #f0ede8; }
+.place-photo .photo-status { padding: 6px; color: #786b62; font-size: 11px; line-height: 1.25; text-align: center; }
+.place-photo .photo-status[hidden] { display: none; }
