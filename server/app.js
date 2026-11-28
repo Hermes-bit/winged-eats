@@ -19,6 +19,16 @@ function createApp(db, options = {}) {
     next();
   });
 
+  app.use('/api', (req, res, next) => {
+    if (req.method === 'GET' && (req.path === '/config' || req.path.startsWith('/places/'))) {
+      res.vary('Origin');
+      if (req.get('Origin') === 'https://hermes-bit.github.io') {
+        res.set('Access-Control-Allow-Origin', 'https://hermes-bit.github.io');
+      }
+    }
+    next();
+  });
+
   app.use('/api/partner', partnerRoutes);
   app.use('/api', createPlacesRouter(places, options.google || config.GOOGLE));
   app.use('/api', publicRoutes);

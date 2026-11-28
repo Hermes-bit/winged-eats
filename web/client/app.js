@@ -74,7 +74,7 @@ const store = {
   get(key, fallback) {
     try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
   },
-  set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* stockage indisponible */ } },
+  set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; } },
   remove(key) { try { localStorage.removeItem(key); } catch { /* stockage indisponible */ } },
 };
 const NBSP = ' ';
@@ -299,15 +299,19 @@ function updateCartBadge() {
 }
 const favs = () => store.get('we_favs', []);
 const isFav = (id) => favs().includes(id);
-function favBtn(id, cls = 'heart') {
+function favBtn(id, cls = 'heart', onChange = null) {
   const b = el('button', { class: cls, type: 'button' }, I('heart'));
   const paint = () => { const on = isFav(id); b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? 'Retirer des favoris' : 'Ajouter aux favoris'); };
   b.addEventListener('click', (e) => {
     e.preventDefault(); e.stopPropagation();
     const list = favs();
-    store.set('we_favs', list.includes(id) ? list.filter((x) => x !== id) : [id, ...list]);
+    if (!store.set('we_favs', list.includes(id) ? list.filter((x) => x !== id) : [id, ...list])) {
+      toast("Impossible d'enregistrer vos favoris sur cet appareil.", 'info');
+      return;
+    }
     paint();
     toast(isFav(id) ? 'Ajouté à vos favoris' : 'Retiré de vos favoris', 'heart');
+    if (onChange) onChange();
   });
   paint();
   return b;
@@ -322,23 +326,23 @@ function rememberSearch(q) {
 // Cartes de restaurants
 // ---------------------------------------------------------------------
 
-function partnerCard(r) {
+function partnerCard(r, onFavoriteChange = null) {
   const closed = !r.is_open;
   const out = r.in_delivery_zone === false;
   const tag = closed ? ['Fermé', 'd'] : out ? ['Hors zone', 'd'] : r.delivery_fee <= 400 ? [`Livraison ${fmtF(r.delivery_fee)}`, 'g'] : null;
   const name = displayName(r.name);
   return el('article', { class: out ? 'rc dim' : 'rc' },
-    F(restoKey(r), null, tag ? el('span', { class: `tag ${tag[1]}`, text: tag[0] }) : null, favBtn(r.id)),
+    F(restoKey(r), null, tag ? el('span', { class: `tag ${tag[1]}`, text: tag[0] }) : null, favBtn(r.id, 'heart', onFavoriteChange)),
     el('div', { class: 't ell', text: name }),
     el('div', { class: 'm ell', text: `${r.prep_minutes}–${r.prep_minutes + 10} min · ${fmtKm(r.distance_km)} · ${r.quartier}` }),
     el('div', { class: 'm' }, `Livraison ${fmtF(r.delivery_fee)}`, isDemo(r.name) ? el('span', { class: 'soonp', text: ' · Démo' }) : null),
     out ? null : el('a', { class: 'stretch', href: `#/r/${r.id}`, 'aria-label': `${name}, ${r.category}` }));
 }
 
-function placeCard(p) {
+function placeCard(p, onFavoriteChange = null) {
   const label = p.category !== 'restaurant' ? catInfo(p.category).label : (p.type_label || 'Restaurant');
   return el('article', { class: 'rc' },
-    F(placeKey(p), null, el('span', { class: 'tag g', text: 'Bientôt' }), photoImg(p.photo, 480)),
+    F(placeKey(p), null, el('span', { class: 'tag g', text: 'Bientôt' }), photoImg(p.photo, 480), favBtn(p.id, 'heart', onFavoriteChange)),
     el('div', { class: 't ell', text: p.name }),
     el('div', { class: 'm ell' }, p.rating ? [S(), el('b', { style: 'color:#22150F', text: ` ${fmtRating(p.rating)}` }), ` (${num(p.rating_count)})`] : 'Pas encore noté',
       p.distance_km !== null ? ` · ${fmtKm(p.distance_km)}` : ''),
@@ -355,7 +359,7 @@ function googleBlock({ title, sub, layout = 'hs', load, transform = (l) => l, em
   load().then((list) => {
     const items = transform(list);
     if (!items.length) { if (empty) fill(box, el('p', { class: 'm', style: 'padding:0 0 4px', text: empty })); else wrap.remove(); return; }
-    fill(box, items.map(placeCard));
+    fill(box, items.map((p) => placeCard(p)));
     wrap.append(googleCredit());
   }).catch((e) => fill(box, el('div', { style: 'grid-column:1/-1' }, alertBox(e.message, true))));
   return wrap;
@@ -473,7 +477,7 @@ function homeView(list, origin, redraw) {
   ], { label: 'Trier' });
 
   const popular = googleBlock({ title: `Populaires à ${city.short}`, sub: 'Restaurants réels · notes Google', load: () => gNearby(origin), transform: (l) => l.filter((p) => p.rating >= 4).sort((a, b) => b.rating - a.rating || b.rating_count - a.rating_count).slice(0, 10) });
-  const partnersHs = inZone.length ? el('div', { class: 'hs' }, [...inZone].sort((a, b) => a.distance_km - b.distance_km).slice(0, 6).map(partnerCard)) : null;
+  const partnersHs = inZone.length ? el('div', { class: 'hs' }, [...inZone].sort((a, b) => a.distance_km - b.distance_km).slice(0, 6).map((r) => partnerCard(r))) : null;
 
   return [
     el('div', { class: 'pad fl sp', style: 'padding-top:calc(14px + env(safe-area-inset-top))' },
@@ -512,7 +516,7 @@ function homeView(list, origin, redraw) {
     el('div', { id: 'partners', style: 'scroll-margin-top:10px' },
       sec(browsing ? (homeState.category ? catInfo(homeState.category).label : 'Résultats') : 'Restaurants partenaires', `${plural(shown.length, 'restaurant')} où commander`),
       browsing ? el('div', { class: 'pad', style: 'margin:-4px 0 10px' }, el('button', { class: 'chip', type: 'button', onclick: reset }, I('x'), 'Réinitialiser')) : null),
-    shown.length ? el('div', { class: 'vlist' }, shown.map(partnerCard))
+    shown.length ? el('div', { class: 'vlist' }, shown.map((r) => partnerCard(r)))
       : el('div', { class: 'pad' }, alertBox(googleOn() ? 'Aucun restaurant partenaire ici pour l’instant. Découvrez ci-dessous les établissements de la ville.' : 'Aucun restaurant ne correspond.', true)),
     googleBlock({
       title: homeState.category ? `${catInfo(homeState.category).label} à ${city.short}` : `À découvrir à ${city.short}`,
@@ -590,7 +594,7 @@ async function renderOffres(alive) {
   if (!alive()) return;
   const inZone = list.filter((r) => r.in_delivery_zone && r.is_open);
   const cheap = inZone.filter((r) => r.delivery_fee <= 500).sort((a, b) => a.delivery_fee - b.delivery_fee);
-  const cheapHs = cheap.length ? el('div', { class: 'hs' }, cheap.map(partnerCard)) : null;
+  const cheapHs = cheap.length ? el('div', { class: 'hs' }, cheap.map((r) => partnerCard(r))) : null;
   setView(
     topbar('', { back: '#/' }),
     el('div', { class: 'bigt', text: 'Offres' }),
@@ -1291,7 +1295,7 @@ async function renderPlace(id, alive) {
     el('div', { class: 'hero' },
       p.photos.length ? el('div', { class: 'gal' }, p.photos.map((ph, i) => F(k, 190, photoImg(ph, 900), p.photos.length > 1 ? el('span', { class: 'tag d', text: `${i + 1}/${p.photos.length}` }) : null))) : F(k, 190),
       el('div', { class: 'acts' }, el('button', { class: 'circ w', type: 'button', 'aria-label': 'Retour', onclick: () => goBack('#/') }, I('back')),
-        p.maps_uri ? el('a', { class: 'circ w', href: p.maps_uri, target: '_blank', rel: 'noopener', 'aria-label': 'Ouvrir dans Google Maps' }, I('loc')) : el('span'))),
+        favBtn(p.id, 'circ w'))),
     el('div', { class: 'pad', style: 'margin-top:-28px;position:relative' },
       el('div', { class: 'logo-sq', 'aria-hidden': 'true', text: initials(p.name) }),
       el('h1', { class: 'rname', style: 'margin-bottom:0', text: p.name }),
@@ -1304,6 +1308,12 @@ async function renderPlace(id, alive) {
         tel ? el('a', { class: 'btn', href: `tel:${tel}` }, I('phone'), 'Appeler') : null,
         p.maps_uri ? el('a', { class: tel ? 'btn lt' : 'btn', href: p.maps_uri, target: '_blank', rel: 'noopener' }, I('loc'), 'Itinéraire') : null),
       p.summary ? el('p', { class: 'm', style: 'font-size:13px;margin-top:14px', text: p.summary }) : null,
+      el('div', { class: 't', style: 'margin:16px 0 4px', text: 'Menu' }),
+      el('p', { class: 'm', style: 'font-size:13px;margin:4px 0 10px', text: tel
+        ? 'Le menu et les prix ne sont pas fournis ici. Consultez le site ou contactez le restaurant pour les demander.'
+        : 'Le menu et les prix ne sont pas fournis ici. Consultez le site ou la fiche Google Maps pour plus d’informations.' }),
+      p.website ? el('a', { class: 'btn lt', href: p.website, target: '_blank', rel: 'noopener noreferrer' }, 'Site du restaurant · menu si disponible')
+        : p.maps_uri ? el('a', { class: 'btn lt', href: p.maps_uri, target: '_blank', rel: 'noopener noreferrer' }, 'Voir la fiche Google Maps') : null,
       p.hours.length ? [el('div', { class: 't', style: 'margin:16px 0 4px' }, 'Horaires'), el('ul', { class: 'hours' }, p.hours.map((h) => { const [d, ...r] = h.split(': '); return el('li', null, el('span', { text: d.charAt(0).toUpperCase() + d.slice(1) }), el('b', { text: r.join(': ') })); }))] : null,
       p.address_full ? [el('div', { class: 't', style: 'margin:16px 0 4px' }, 'Adresse'), el('div', { class: 'm', style: 'font-size:13px', text: p.address_full })] : null),
     el('p', { class: 'gattr', style: 'padding-bottom:30px', text: 'Données et photos : Google Maps (mises à jour automatiquement).' }));
@@ -1312,6 +1322,49 @@ async function renderPlace(id, alive) {
 // ---------------------------------------------------------------------
 // Compte et espaces en démonstration
 // ---------------------------------------------------------------------
+
+async function renderFavorites(alive) {
+  const origin = store.get('we_origin', null);
+  if (!origin) return renderLogin('Choisissez une adresse pour afficher vos favoris.');
+  chrome('nav', 'account');
+  const ids = favs();
+  const head = topbar('Mes favoris', { back: '#/account' });
+  if (!ids.length) return setView(head, emptyState('pou', 'Aucun favori', 'Enregistrez vos restaurants préférés sur cet appareil.', el('a', { class: 'btn', href: '#/', style: 'width:auto;display:inline-flex' }, 'Découvrir les restaurants')));
+  const body = el('div', { class: 'vlist', 'aria-live': 'polite' });
+  setView(head, el('p', { class: 'm pad', text: 'Favoris enregistrés sur cet appareil. Les fiches Google sont actualisées à l’ouverture.' }), body);
+  let partners = [];
+  let partnerError = null;
+  if (ids.some((id) => typeof id === 'number')) {
+    try { partners = await getRestaurants(origin); } catch (e) { partnerError = e; }
+  }
+  if (!alive()) return;
+  for (const id of ids) {
+    if (!alive()) return;
+    const slot = el('div');
+    body.append(slot);
+    if (typeof id === 'number') {
+      if (partnerError) {
+        fill(slot, alertBox(`Impossible de charger un restaurant favori : ${partnerError.message}`), el('button', { class: 'btn lt', type: 'button', onclick: route }, 'Réessayer'));
+        continue;
+      }
+      const partner = partners.find((r) => r.id === id);
+      if (partner) { fill(slot, partnerCard(partner, route)); continue; }
+    } else if (typeof id === 'string') {
+      try {
+        const place = await gDetails(id, origin);
+        if (!alive()) return;
+        fill(slot, placeCard(place, route));
+        continue;
+      } catch (e) {
+        if (!alive()) return;
+        fill(slot, alertBox(`Impossible de charger un favori Google : ${e.message}`), favBtn(id, 'chip', route));
+        continue;
+      }
+    }
+    fill(slot, alertBox('Ce restaurant favori est indisponible.'), favBtn(id, 'chip', route));
+  }
+  if (ids.some((id) => typeof id === 'string')) body.append(googleCredit());
+}
 
 const RP = [
   { n: 'Essentiel', d: 'Maquis', p: [7500, 20000, 72000], c: '8 %', f: ['Menu, commandes et paiement mobile', 'Versement chaque semaine'] },
@@ -1404,6 +1457,7 @@ function renderAccount() {
       row('globe', 'Langue', 'Français · Mooré et Dioula bientôt', () => infoSheet('Langue', [['Français', 'Langue actuelle de l’application.'], ['Mooré', 'Traduction en préparation.'], ['Dioula', 'Traduction en préparation.']])),
       row('store', 'Inscrire mon restaurant', 'Espace restaurateur et abonnements', () => { location.hash = '#/abonnement/r'; }),
       row('moto', 'Devenir livreur Winged', 'Aperçu de l’application livreur', () => { location.hash = '#/livreur'; }),
+      row('heart', 'Mes favoris', 'Restaurants enregistrés sur cet appareil', () => { location.hash = '#/favorites'; }),
       row('clock', 'Mes commandes', null, () => { location.hash = '#/orders'; }),
       row('gear', 'Paramètres', 'Confidentialité, données, à propos', () => infoSheet('Paramètres', PRIVACY, el('button', {
         class: 'btn lt', type: 'button', style: 'margin-top:14px;color:var(--red2)',
@@ -1425,7 +1479,7 @@ const HELP = [
 const PRIVACY = [
   ['Sur cet appareil', 'Adresse, panier, favoris, recherches et liste de vos commandes.'],
   ['Envoyé au restaurant', 'Nom, téléphone, repère et note, uniquement pour préparer et remettre la commande.'],
-  ['Restaurants de la ville', 'Noms, notes, horaires et photos viennent de Google Maps, en direct ; Winged Eats ne les enregistre pas.'],
+  ['Restaurants de la ville', 'Les favoris Google conservent uniquement leur identifiant sur cet appareil ; noms, notes, horaires et photos sont chargés en direct.'],
 ];
 
 // ---------------------------------------------------------------------
@@ -1461,6 +1515,7 @@ function route() {
   if (a === 'cart') return renderCart(alive);
   if (a === 'order' && b) return renderOrder(Number(b), alive);
   if (a === 'orders') return renderOrders(alive);
+  if (a === 'favorites') return renderFavorites(alive);
   if (a === 'search') return renderSearch(alive);
   if (a === 'map') return renderMap(alive);
   if (a === 'offres') return renderOffres(alive);

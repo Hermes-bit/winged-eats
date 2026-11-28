@@ -44,7 +44,7 @@ function fakeFetch(log) {
       return json(200, { places: [fakePlace({ id: 'ChIJ_far_away_00001', location: { latitude: 11.17, longitude: -4.29 } }), fakePlace()] });
     }
     if (url.includes('/media?')) return json(200, { photoUri: 'https://lh3.googleusercontent.test/photo.jpg' });
-    if (url.includes(`/places/${PLACE_ID}`)) return json(200, fakePlace({ nationalPhoneNumber: '70 00 00 00', regularOpeningHours: { weekdayDescriptions: ['lundi: 10:00 – 23:00'] } }));
+    if (url.includes(`/places/${PLACE_ID}`)) return json(200, fakePlace({ nationalPhoneNumber: '70 00 00 00', websiteUri: 'https://restaurant.example/menu', regularOpeningHours: { weekdayDescriptions: ['lundi: 10:00 – 23:00'] } }));
     return json(404, { error: { message: 'Not found' } });
   };
 }
@@ -102,6 +102,18 @@ test('configuration publique : catégories et clé navigateur, jamais la clé se
   assert.ok(!JSON.stringify(data).includes('cle-de-test'));
 });
 
+test('GitHub Pages peut consulter Places mais pas les API de commande', async () => {
+  const headers = { Origin: 'https://hermes-bit.github.io' };
+  const config = await fetch(`${base}/api/config`, { headers });
+  assert.equal(config.headers.get('access-control-allow-origin'), headers.Origin);
+  const places = await fetch(`${base}/api/places/nearby?lat=${ORIGIN.latitude}&lon=${ORIGIN.longitude}`, { headers });
+  assert.equal(places.headers.get('access-control-allow-origin'), headers.Origin);
+  const other = await fetch(`${base}/api/config`, { headers: { Origin: 'https://example.com' } });
+  assert.equal(other.headers.get('access-control-allow-origin'), null);
+  const orders = await fetch(`${base}/api/orders/1`, { headers });
+  assert.equal(orders.headers.get('access-control-allow-origin'), null);
+});
+
 test('restaurants à proximité : normalisés, catégorisés, fermés définitivement exclus', async () => {
   const res = await fetch(`${base}/api/places/nearby?lat=${ORIGIN.latitude}&lon=${ORIGIN.longitude}`);
   const data = await res.json();
@@ -138,6 +150,20 @@ test('fiche détaillée : téléphone et horaires', async () => {
   const data = await res.json();
   assert.equal(data.phone_display, '70 00 00 00');
   assert.deepEqual(data.hours, ['lundi: 10:00 – 23:00']);
+  assert.equal(data.website, 'https://restaurant.example/menu');
+  assert.equal(data.maps_uri, 'https://maps.google.com/?cid=1');
+});
+
+test('fiche détaillée : les liens externes invalides ne sont pas exposés', async () => {
+  const service = createPlacesService(GOOGLE, {
+    fetchImpl: async () => ({
+      ok: true, status: 200,
+      json: async () => fakePlace({ websiteUri: 'javascript:alert(1)', googleMapsUri: 'https://user:password@example.com/' }),
+    }),
+  });
+  const data = await service.details(PLACE_ID, ORIGIN);
+  assert.equal(data.website, null);
+  assert.equal(data.maps_uri, null);
 });
 
 test('sans clé Google : réponse 503 explicite', async () => {

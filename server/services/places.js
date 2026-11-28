@@ -59,6 +59,16 @@ function categorize(place) {
 const isValidPlaceId = (id) => typeof id === 'string' && PLACE_ID_RE.test(id);
 const isValidPhotoName = (name) => typeof name === 'string' && PHOTO_NAME_RE.test(name);
 
+function webUrl(value) {
+  if (typeof value !== 'string') return null;
+  try {
+    const url = new URL(value);
+    return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
 function photoOf(p) {
   const author = (p.authorAttributions || [])[0] || {};
   return { name: p.name, author: author.displayName || null, author_uri: author.uri || null };
@@ -83,7 +93,7 @@ function normalize(place, origin) {
     rating_count: place.userRatingCount || 0,
     open_now: typeof place.currentOpeningHours?.openNow === 'boolean' ? place.currentOpeningHours.openNow : null,
     photo: place.photos && place.photos[0] ? photoOf(place.photos[0]) : null,
-    maps_uri: place.googleMapsUri || null,
+    maps_uri: webUrl(place.googleMapsUri),
   };
 }
 
@@ -93,7 +103,7 @@ function normalizeDetails(place, origin) {
     address_full: place.formattedAddress || null,
     phone: place.internationalPhoneNumber || place.nationalPhoneNumber || null,
     phone_display: place.nationalPhoneNumber || place.internationalPhoneNumber || null,
-    website: place.websiteUri || null,
+    website: webUrl(place.websiteUri),
     summary: place.editorialSummary?.text || null,
     hours: place.regularOpeningHours?.weekdayDescriptions || [],
     photos: (place.photos || []).slice(0, 6).map(photoOf),
