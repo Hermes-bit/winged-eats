@@ -62,6 +62,30 @@ test("l'adresse principale ouvre l'application client", async () => {
   assert.match(await client.text(), /<title>Winged Eats<\/title>/);
 });
 
+test('mode réel : masque les données de démonstration sans effacer les autres restaurants', async () => {
+  const isolated = openDatabase(':memory:');
+  const demos = seedDemoData(isolated);
+  isolated.prepare('UPDATE restaurants SET name = ? WHERE id = ?').run('Restaurant réel', demos[1].id);
+  const app = createApp(isolated, { hideDemo: true }).listen(0);
+  await new Promise((resolve) => app.once('listening', resolve));
+  const url = `http://127.0.0.1:${app.address().port}`;
+  try {
+    const list = await (await fetch(`${url}/api/restaurants`)).json();
+    assert.deepEqual(list.map((r) => r.name), ['Restaurant réel']);
+    assert.equal((await fetch(`${url}/api/restaurants/${demos[0].id}`)).status, 404);
+    assert.equal((await fetch(`${url}/api/restaurants/${demos[1].id}`)).status, 200);
+    const order = await fetch(`${url}/api/orders`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ restaurant_id: demos[0].id }) });
+    assert.equal(order.status, 404);
+    const login = await fetch(`${url}/api/partner/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: demos[0].partner_code }) });
+    assert.equal(login.status, 401);
+    const menu = await fetch(`${url}/api/partner/menu`, { headers: { Authorization: `Bearer ${demos[0].partner_code}` } });
+    assert.equal(menu.status, 401);
+    const realLogin = await fetch(`${url}/api/partner/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: demos[1].partner_code }) });
+    assert.equal(realLogin.status, 200);
+    assert.equal(isolated.prepare('SELECT COUNT(*) AS n FROM restaurants').get().n, 3);
+  } finally { app.close(); isolated.close(); }
+});
+
 test('calcul de distance et frais de livraison', () => {
   assert.equal(distanceKm(12.3, -1.5, 12.3, -1.5), 0);
   const km = distanceKm(12.0, -1.0, 12.1, -1.0);

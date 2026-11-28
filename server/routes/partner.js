@@ -7,6 +7,7 @@ const orders = require('../services/orders');
 const { ApiError } = require('../errors');
 
 const router = express.Router();
+const isDemo = (name) => /\(démo\)\s*$/i.test(name || '');
 
 // Authentification partenaire MVP : code remis au restaurant, stocké haché.
 // À remplacer par des comptes utilisateurs avec mot de passe (phase 3).
@@ -16,7 +17,7 @@ function requirePartner(req, res, next) {
   const restaurant = code
     ? req.db.prepare('SELECT id, name FROM restaurants WHERE partner_code_hash = ?').get(hashCode(code))
     : null;
-  if (!restaurant) return next(new ApiError(401, 'Code partenaire invalide'));
+  if (!restaurant || (req.hideDemo && isDemo(restaurant.name))) return next(new ApiError(401, 'Code partenaire invalide'));
   req.restaurant = restaurant;
   return next();
 }
@@ -26,7 +27,7 @@ router.post('/login', (req, res) => {
   const restaurant = code
     ? req.db.prepare('SELECT id, name FROM restaurants WHERE partner_code_hash = ?').get(hashCode(code))
     : null;
-  if (!restaurant) throw new ApiError(401, 'Code partenaire invalide');
+  if (!restaurant || (req.hideDemo && isDemo(restaurant.name))) throw new ApiError(401, 'Code partenaire invalide');
   res.json(restaurant);
 });
 

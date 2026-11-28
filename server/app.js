@@ -16,6 +16,7 @@ function createApp(db, options = {}) {
   app.use(express.json({ limit: '100kb' }));
   app.use((req, res, next) => {
     req.db = db;
+    req.hideDemo = Boolean(options.hideDemo);
     next();
   });
 

@@ -23,10 +23,10 @@ npm test
 npm start
 ```
 
-Au premier démarrage, la base de démonstration est créée et les **codes partenaires** sont affichés une seule fois. Notez-les.
+Les données de démonstration ne sont plus créées ni affichées par le serveur. Les données existantes ne sont pas effacées.
 
 - Client : http://localhost:3000/client/
-- Partenaire (restaurant) : http://localhost:3000/partner/ (connexion avec le code affiché)
+- Partenaire (restaurant) : http://localhost:3000/partner/ (nécessite un code partenaire réel)
 
 ## Structure
 - `server/` : API Express, logique métier (prix, commandes, statuts), base SQLite.
@@ -50,12 +50,16 @@ Redémarrez `npm start` après chaque modification.
 
 Dans Google Cloud :
 - activez « Places API (New) » et « Maps JavaScript API » ;
-- liez un **compte de facturation** au projet. Sans facturation, Google renvoie les restaurants sans leurs photos ni leurs avis ;
-- restreignez la clé navigateur à Maps JavaScript API et au domaine du site.
+- liez un **compte de facturation** au projet ;
+- utilisez deux clés distinctes : la clé serveur pour Places API (New) et la clé navigateur pour Maps JavaScript API ;
+- restreignez la clé navigateur aux sites `https://hermes-bit.github.io/*` et `https://winged-eats-1.onrender.com/*` et à Maps JavaScript API. Ne mettez pas cette clé restreinte aux sites dans `GOOGLE_PLACES_API_KEY`.
 
 Fonctionnement :
 - Les restaurants de Ouagadougou sont demandés **en direct** à Google : populaires autour de l'adresse, par catégorie, ou par recherche. Rien n'est enregistré en base, conformément aux conditions de Google Maps Platform. C'est pourquoi photos, notes et horaires restent toujours à jour.
 - La recherche par quartier est déclenchée à la demande et paginée. Les résultats Google peuvent inclure des adresses voisines et ne constituent pas une liste exhaustive ni un découpage administratif vérifié. Chaque page supplémentaire consomme un appel.
+- Sur GitHub Pages, la carte Google affiche au maximum 20 établissements par recherche. Déplacer la carte puis choisir « Rechercher dans cette zone » lance une nouvelle recherche ; Google ne garantit pas que tous les établissements soient répertoriés.
+- Si la clé de carte manque ou est refusée, GitHub Pages utilise la carte et les établissements OpenStreetMap ; ces données ne sont pas mélangées aux données Google.
+- GitHub Pages n'affiche plus les données ou commandes de démonstration ; les commandes et l'espace partenaire de cette version restent indisponibles.
 - Ils sont classés dans des catégories façon plateforme de livraison : Maquis, Grillades, Africaine, Fast-food, Pizza, Chawarma, Asiatique, Européenne, Café, Boulangerie, Desserts.
 - Ce sont des fiches vitrines (appeler, itinéraire) avec la mention « Bientôt sur Winged Eats ». Seuls les restaurants partenaires sont commandables.
 - Le menu des établissements Google n'est pas garanti : la fiche propose le site du restaurant lorsqu'il est disponible, sinon Google Maps, et invite à contacter le restaurant. Aucun plat ni prix n'est inventé.

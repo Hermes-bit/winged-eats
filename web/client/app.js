@@ -502,7 +502,7 @@ function homeView(list, origin, redraw) {
     }, F(CAT_FOOD[k] || 'riz', 52), catInfo(k).label))),
     !browsing ? el('div', { class: 'pad', style: 'margin-top:8px' }, el('div', { class: 'banner' },
       el('div', { style: 'flex:1' },
-        el('div', { class: 'bt', text: 'Winged Days' }),
+        el('div', { class: 'bt', text: 'Découvrez les restaurants' }),
         el('div', { class: 'bs', text: minFee !== null ? `Livraison dès ${fmtF(minFee)} à ${origin.label}. Paiement en espèces à la livraison.` : 'Les restaurants partenaires de votre quartier arrivent bientôt.' }),
         el('button', { class: 'chip', type: 'button', onclick: toPartners }, "J'en profite")),
       el('div', { style: 'width:92px;height:80px' }, F('bro', 80)))) : null,
@@ -1232,7 +1232,13 @@ async function renderMap(alive) {
   try { list = await getRestaurants(origin); } catch (e) { if (alive()) { fill(sheet, alertBox(e.message)); wrap.append(sheet); } return; }
   const useGoogle = Boolean(appConfig.google.maps_key) && !mapsAuthFailed;
   // Conditions Google : les établissements Google ne s'affichent qu'avec le fond de carte Google.
-  const places = useGoogle && googleOn() ? await gNearby(origin).catch(() => []) : [];
+  let places = [];
+  if (useGoogle && googleOn()) {
+    try { places = await gNearby(origin); } catch (e) {
+      if (alive()) fill(wrap, el('div', { class: 'pad' }, alertBox(e.message), el('button', { class: 'btn lt', type: 'button', onclick: route }, 'Réessayer')));
+      return;
+    }
+  }
   if (!alive()) return;
   const all = [
     ...list.filter((r) => Number.isFinite(r.latitude)).map((r) => ({
@@ -1304,33 +1310,7 @@ async function renderMap(alive) {
       return;
     } catch (e) { if (!alive()) return; toast(e.message, 'info'); }
   }
-  // Plan stylisé : repères positionnés d'après les coordonnées (partenaires uniquement).
-  const partners = all.filter((it) => it.kind === 'partner');
-  const radius = Math.max(1.5, ...partners.map((it) => it.km * 1.25));
-  const layout = () => {
-    const w = wrap.clientWidth;
-    const h = wrap.clientHeight - 190;
-    const cx = w / 2;
-    const cy = 120 + h / 2;
-    const scale = (Math.min(w, h) / 2 - 30) / radius;
-    const kx = 111.32 * Math.cos((origin.latitude * Math.PI) / 180);
-    fill(wrap, planSvg(), over, el('div', { class: 'me', style: `left:${cx}px;top:${cy}px` }, el('span', { class: 'pulse' }), el('i')),
-      el('div', { class: 'mnote', style: 'top:108px', text: "Plan simplifié · distances à vol d'oiseau" }), sheet);
-    pins.clear();
-    for (const it of partners) {
-      const p = pinEl(it);
-      p.style.left = `${cx + (it.lng - origin.longitude) * kx * scale}px`;
-      p.style.top = `${cy - (it.lat - origin.latitude) * 110.57 * scale}px`;
-      p.addEventListener('click', () => select(it.id));
-      pins.set(it.id, p);
-      wrap.append(p);
-    }
-    applyFilters();
-  };
-  layout();
-  const onResize = () => layout();
-  window.addEventListener('resize', onResize);
-  onCleanup(() => window.removeEventListener('resize', onResize));
+  fill(wrap, el('div', { class: 'pad' }, alertBox('Carte Google indisponible : vérifiez la clé Maps JavaScript et ses restrictions.'), el('a', { class: 'btn lt', href: '#/search' }, 'Rechercher des restaurants')));
 }
 
 // ---------------------------------------------------------------------
@@ -1507,15 +1487,10 @@ function renderAccount() {
       [['wallet', 'Portefeuille', soon('Portefeuille', 'Orange Money et Moov Money arrivent bientôt. Aujourd’hui, le paiement se fait en espèces à la livraison.')],
         ['tag', 'Promotions', () => { location.hash = '#/offres'; }],
         ['help', 'Aide', () => infoSheet('Aide', HELP)]].map(([ic, l, fn]) => el('button', { type: 'button', onclick: fn, style: 'background:#F4ECE4;border:0;border-radius:14px;padding:12px 6px;display:grid;justify-items:center;gap:4px;font-weight:700;font-size:12px;cursor:pointer' }, I(ic), l))),
-    el('div', { class: 'pad' }, el('button', { type: 'button', onclick: soon('Parrainage', '1 000 F offerts à vous et à votre ami sur la prochaine commande : le parrainage ouvrira avec le paiement mobile.'), style: 'width:100%;text-align:left;border:0;cursor:pointer;background:#22150F;color:#fff;border-radius:14px;padding:12px;display:flex;gap:10px;align-items:center' },
-      el('span', { class: 'circ', style: 'background:#F6B21B;color:#22150F' }, I('gift')),
-      el('div', null, el('div', { class: 't', text: 'Parrainez un ami' }), el('div', { style: 'font-size:12px;color:#E9D8CC', text: '1 000 F offerts à chacun · bientôt' })))),
     el('div', { class: 'list', style: 'margin-top:6px' },
       row('wallet', 'Moyens de paiement', 'Espèces · Orange Money et Moov Money bientôt', soon('Moyens de paiement', 'Le paiement mobile sera activé dès la signature avec Orange et Moov.')),
       row('pin', 'Ville', origin ? `${cityOf(origin).name} · ${origin.label}` : 'Non choisie', () => zoneSheet((origin && origin.city) || 'ouaga'), el('span', { class: 'chip', style: 'font-size:11px', text: 'Changer' })),
       row('globe', 'Langue', 'Français · Mooré et Dioula bientôt', () => infoSheet('Langue', [['Français', 'Langue actuelle de l’application.'], ['Mooré', 'Traduction en préparation.'], ['Dioula', 'Traduction en préparation.']])),
-      row('store', 'Inscrire mon restaurant', 'Espace restaurateur et abonnements', () => { location.hash = '#/abonnement/r'; }),
-      row('moto', 'Devenir livreur Winged', 'Aperçu de l’application livreur', () => { location.hash = '#/livreur'; }),
       row('heart', 'Mes favoris', 'Restaurants enregistrés sur cet appareil', () => { location.hash = '#/favorites'; }),
       row('clock', 'Mes commandes', null, () => { location.hash = '#/orders'; }),
       row('gear', 'Paramètres', 'Confidentialité, données, à propos', () => infoSheet('Paramètres', PRIVACY, el('button', {
@@ -1569,6 +1544,10 @@ function route() {
   closeAllSheets();
   window.scrollTo({ top: 0, behavior: 'instant' });
   const [a, b] = (location.hash.replace(/^#\/?/, '') || '').split('/').filter(Boolean);
+  if (a === 'livreur' || a === 'abonnement') {
+    chrome('nav', null);
+    return setView(topbar('Bientôt disponible'), el('div', { class: 'pad' }, alertBox('Cet espace n’est pas encore disponible.', true)));
+  }
   if (a === 'r' && b) return renderRestaurant(Number(b), alive);
   if (a === 'p' && b) return renderPlace(decodeURIComponent(b), alive);
   if (a === 'cart') return renderCart(alive);
