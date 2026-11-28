@@ -224,6 +224,7 @@ body.bare #app { padding-bottom: 0; }
 body .nb {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   width: min(456px, calc(100% - 24px));
   height: auto;
@@ -257,24 +258,43 @@ body .nb a span { position: absolute; width: 1px; height: 1px; overflow: hidden;
 body .nb a.on { background: #fff; color: var(--ink); }
 body .nb a.on .ic { stroke-width: 2.6; }
 body .nb a[data-s="search"] {
-  flex: 1;
+  flex: 1 1 50px;
   width: auto;
   display: flex;
   justify-content: center;
-  gap: 8px;
+  gap: 0;
+  overflow: hidden;
   border-radius: 99px;
   background: #fff;
   color: #6f6861;
   font-size: 15px;
   font-weight: 600;
+  transition: flex-grow .25s ease, transform .16s ease-out, color .16s;
 }
-body .nb a[data-s="search"] span { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+body .nb a[data-s="search"] span {
+  position: static;
+  width: auto;
+  height: auto;
+  max-width: 130px;
+  margin-left: 8px;
+  overflow: hidden;
+  clip-path: none;
+  opacity: 1;
+  transition: max-width .25s ease, margin .25s ease, opacity .18s ease;
+}
+body .nb.search-compact a[data-s="search"] { flex-grow: 0; }
+body .nb.search-compact a[data-s="search"] span { max-width: 0; margin-left: 0; opacity: 0; }
 body .nb a[data-s="search"].on { background: #fff; color: var(--ink); }
 body .nb .badge { top: 2px; left: auto; right: 2px; }
 @media (max-width: 350px) {
   body .nb { gap: 6px; }
   body .nb a { width: 44px; height: 44px; }
-  body .nb a[data-s="search"] { font-size: 13px; gap: 6px; }
+  body .nb a[data-s="search"] { flex-basis: 44px; font-size: 13px; }
+  body .nb a[data-s="search"] span { margin-left: 6px; }
+  body .nb.search-compact a[data-s="search"] span { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body .nb a[data-s="search"], body .nb a[data-s="search"] span { transition: none; }
 }
 
 .chips { align-items: center; gap: 8px; }

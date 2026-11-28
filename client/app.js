@@ -1725,6 +1725,7 @@ function onCleanup(fn) { cleanups.push(fn); }
 function chrome(mode, section) {
   document.body.classList.toggle('nonav', mode === 'nonav');
   document.body.classList.toggle('bare', mode === 'bare');
+  document.getElementById('nb').classList.toggle('search-compact', section === 'map' || section === 'search');
   document.querySelectorAll('#nb a').forEach((a) => {
     const on = a.dataset.s === section;
     a.classList.toggle('on', on);
