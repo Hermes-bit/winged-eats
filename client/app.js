@@ -1736,12 +1736,28 @@ const PRIVACY = [
 let routeSeq = 0;
 let navCount = -1;
 let cleanups = [];
+let navShown = false;
 function onCleanup(fn) { cleanups.push(fn); }
 
 function chrome(mode, section) {
   document.body.classList.toggle('nonav', mode === 'nonav');
   document.body.classList.toggle('bare', mode === 'bare');
-  document.getElementById('nb').classList.toggle('search-compact', section === 'search');
+  const nav = document.getElementById('nb');
+  nav.classList.toggle('search-compact', section === 'search');
+  if (mode === 'nav' && !navShown) {
+    navShown = true;
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const finish = (event) => {
+        if (event.target !== nav || event.animationName !== 'nav-enter') return;
+        nav.classList.remove('entering');
+        nav.removeEventListener('animationend', finish);
+        nav.removeEventListener('animationcancel', finish);
+      };
+      nav.addEventListener('animationend', finish);
+      nav.addEventListener('animationcancel', finish);
+      nav.classList.add('entering');
+    }
+  }
   document.querySelectorAll('#nb a').forEach((a) => {
     const on = a.dataset.s === section;
     a.classList.toggle('on', on);

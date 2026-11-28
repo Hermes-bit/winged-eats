@@ -237,6 +237,11 @@ body .nb {
   backdrop-filter: none;
   pointer-events: none;
 }
+@keyframes nav-enter {
+  from { transform: translate(-50%, calc(100% + 24px + env(safe-area-inset-bottom))); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}
+body .nb.entering { animation: nav-enter .6s cubic-bezier(.2, .8, .2, 1); }
 body .nb a {
   pointer-events: auto;
   flex: none;
@@ -294,6 +299,7 @@ body .nb .badge { top: 2px; left: auto; right: 2px; }
   body .nb.search-compact a[data-s="search"] span { margin-left: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
+  body .nb.entering { animation: none; }
   body .nb a[data-s="search"], body .nb a[data-s="search"] span { transition: none; }
 }
 
