@@ -1333,6 +1333,8 @@ async function renderMap(alive) {
   let selected = null;
   const mapNotice = mapsAuthFailed ? 'Clé Google Maps refusée' : !googleOn() ? 'Google Places indisponible' : 'Carte Google non configurée';
   let osmStatus = `${mapNotice} · chargement OpenStreetMap…`;
+  let osmLoading = true;
+  let osmError = null;
   let addOsmPins = null;
   const paintSheet = () => {
     const it = all.find((x) => x.id === selected) || visible()[0];
@@ -1367,7 +1369,8 @@ async function renderMap(alive) {
       it ? el('a', { class: 'fl', href: it.href, style: 'gap:10px' },
         el('div', { style: 'width:96px' }, F(it.k, 70)),
         el('div', { style: 'flex:1' }, el('div', { class: 't', text: it.name }), el('div', { class: 'm', text: it.sub }), el('span', { class: 'save', text: it.available ? 'Voir le menu et commander' : 'Voir le menu' })),
-        I('right')) : el('p', { class: 'm', text: 'Aucun restaurant avec ces filtres.' }),
+        I('right')) : el('p', { class: 'm', text: osmLoading ? 'Recherche des restaurants OpenStreetMap…' : osmError ? 'Impossible de charger les restaurants OpenStreetMap.' : 'Aucun restaurant trouvé sur OpenStreetMap dans cette zone.' }),
+      osmError ? el('button', { class: 'chip', type: 'button', onclick: route }, 'Réessayer') : null,
       el('div', { class: 'm', style: 'font-size:10px;margin-top:6px' }, `${osmStatus} · `,
         el('a', { href: 'https://www.openstreetmap.org/copyright', target: '_blank', rel: 'noopener noreferrer', text: '© contributeurs OpenStreetMap' })),
     );
@@ -1395,8 +1398,6 @@ async function renderMap(alive) {
     const { map, lib } = await WEMap.create(host, [origin.longitude, origin.latitude]);
     if (!alive()) { map.remove(); return; }
     onCleanup(() => map.remove());
-    new lib.Marker({ color: '#d74331' }).setLngLat([origin.longitude, origin.latitude])
-      .setPopup(new lib.Popup({ offset: 25 }).setText('Adresse choisie')).addTo(map);
     addOsmPins = (items) => { for (const it of items) {
       const p = pinEl(it);
       p.classList.add('gm');
@@ -1421,6 +1422,7 @@ async function renderMap(alive) {
   }
   WEOSM.nearby(origin.city || 'ouaga').then((places) => {
     if (!alive()) return;
+    osmLoading = false;
     const additions = places.filter((p) => !all.some((partner) => partner.kind === 'partner'
       && fold(partner.name) === fold(p.name)
       && mapDistance({ latitude: partner.lat, longitude: partner.lng }, p) < 0.1)).map((p) => ({
@@ -1434,7 +1436,9 @@ async function renderMap(alive) {
     applyFilters();
   }).catch((error) => {
     if (!alive()) return;
-    osmStatus = error.message;
+    osmLoading = false;
+    osmError = error.message;
+    osmStatus = `${mapNotice} · ${error.message}`;
     paintSheet();
   });
 }
