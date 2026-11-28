@@ -59,6 +59,7 @@ function categorize(place) {
 
 const isValidPlaceId = (id) => typeof id === 'string' && PLACE_ID_RE.test(id);
 const isValidPhotoName = (name) => typeof name === 'string' && PHOTO_NAME_RE.test(name);
+const isValidPageToken = (token) => token === undefined || (typeof token === 'string' && token.length > 0 && token.length <= 2048 && !/[\u0000-\u001f\u007f]/.test(token));
 
 function webUrl(value) {
   if (typeof value !== 'string') return null;
@@ -220,7 +221,7 @@ function createPlacesService(google, { fetchImpl = globalThis.fetch, excludedPla
       if (typeof name !== 'string' || name.trim().length < 2 || name.trim().length > 80 || /[\u0000-\u001f\u007f]/.test(name)) {
         throw new ApiError(400, 'Nom de quartier invalide');
       }
-      if (pageToken !== undefined && (typeof pageToken !== 'string' || !pageToken || pageToken.length > 2048 || /[\u0000-\u001f\u007f]/.test(pageToken))) {
+      if (!isValidPageToken(pageToken)) {
         throw new ApiError(400, 'Page de résultats invalide');
       }
       const body = {
@@ -239,6 +240,25 @@ function createPlacesService(google, { fetchImpl = globalThis.fetch, excludedPla
       });
       return {
         places: keepOpenBusinesses(data.places).map((p) => normalize(p, origin)),
+        nextPageToken: data.nextPageToken || null,
+      };
+    },
+
+    async mapSearch(origin, { pageToken }) {
+      if (!isValidPageToken(pageToken)) throw new ApiError(400, 'Page de résultats invalide');
+      const body = {
+        textQuery: 'restaurants', includedType: 'restaurant', pageSize: 20,
+        languageCode: 'fr', regionCode: 'BF', locationBias: circle(origin, 10000),
+      };
+      if (pageToken) body.pageToken = pageToken;
+      const data = await call('/places:searchText', {
+        method: 'POST',
+        fields: ['nextPageToken', ...LIST_FIELDS.map((f) => `places.${f}`)].join(','),
+        body,
+      });
+      return {
+        places: keepOpenBusinesses(data.places).map((p) => normalize(p, origin))
+          .filter((p) => p.latitude !== null && distanceKm(origin.latitude, origin.longitude, p.latitude, p.longitude) <= 10),
         nextPageToken: data.nextPageToken || null,
       };
     },

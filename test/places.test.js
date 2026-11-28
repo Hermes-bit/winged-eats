@@ -188,6 +188,38 @@ test('route quartier renvoie les résultats et accepte l’origine GitHub Pages'
   assert.equal(invalid.status, 400);
 });
 
+test('carte : résultats paginés, limités à 10 km et validés avant appel Google', async () => {
+  const requests = [];
+  const service = createPlacesService(GOOGLE, {
+    fetchImpl: async (url, init) => {
+      requests.push(JSON.parse(init.body));
+      assert.match(init.headers['X-Goog-FieldMask'], /nextPageToken/);
+      return Response.json({
+        places: [fakePlace(), fakePlace({ id: 'ChIJ_far_away_00001', location: { latitude: 11.17, longitude: -4.29 } })],
+        nextPageToken: requests.length === 1 ? 'page-suivante' : undefined,
+      });
+    },
+  });
+  const first = await service.mapSearch(ORIGIN, {});
+  assert.deepEqual(first.places.map((p) => p.id), [PLACE_ID]);
+  assert.equal(first.nextPageToken, 'page-suivante');
+  assert.equal(requests[0].locationBias.circle.radius, 10000);
+  assert.equal((await service.mapSearch(ORIGIN, { pageToken: first.nextPageToken })).nextPageToken, null);
+  assert.equal(requests[1].pageToken, 'page-suivante');
+  await assert.rejects(service.mapSearch(ORIGIN, { pageToken: 'x'.repeat(2049) }), (e) => e.status === 400);
+  assert.equal(requests.length, 2);
+});
+
+test('route carte : liste paginée et coordonnées obligatoires', async () => {
+  const res = await fetch(`${base}/api/places/map?lat=${ORIGIN.latitude}&lon=${ORIGIN.longitude}`, {
+    headers: { Origin: 'https://hermes-bit.github.io' },
+  });
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get('access-control-allow-origin'), 'https://hermes-bit.github.io');
+  assert.deepEqual((await res.json()).places.map((p) => p.id), [PLACE_ID]);
+  assert.equal((await fetch(`${base}/api/places/map`)).status, 400);
+});
+
 test('photo : redirection vers l’image Google actuelle, non mise en cache', async () => {
   const res = await fetch(`${base}/api/places/photo?name=${encodeURIComponent(PHOTO)}&w=400`, { redirect: 'manual' });
   assert.equal(res.status, 302);

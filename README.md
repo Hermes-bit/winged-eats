@@ -66,6 +66,7 @@ Fonctionnement :
 - Le menu des établissements Google n'est pas garanti : la fiche propose le site du restaurant lorsqu'il est disponible, sinon Google Maps, et invite à contacter le restaurant. Aucun plat ni prix n'est inventé.
 - Les favoris sont propres à chaque appareil. Pour les établissements Google, seul l'identifiant est enregistré localement ; les détails et les photos sont chargés à nouveau à l'ouverture des favoris.
 - Chaque affichage consomme des appels facturés au-delà du quota gratuit de Google. Deux plafonds protègent la facture : `GOOGLE_MAX_CALLS_PER_MINUTE` et `GOOGLE_MAX_CALLS_PER_DAY`.
+- La carte Google charge une recherche de proximité, puis jusqu'à trois pages de recherche textuelle (quatre appels maximum à l'ouverture ou lors d'une nouvelle recherche de zone). Les pages supplémentaires et photos entraînent aussi des appels. Les résultats restent incomplets et limités à 10 km du centre recherché ; les doublons et les fiches masquées sont écartés.
 - Sans clé, l'application fonctionne avec ses seules données et un plan simplifié.
 
 ## Limites actuelles

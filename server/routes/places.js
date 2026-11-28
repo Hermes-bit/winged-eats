@@ -66,6 +66,11 @@ function createPlacesRouter(places, google, moderation) {
     res.json({ ...data, places: await applyModeration(data.places) });
   }));
 
+  router.get('/places/map', wrap(async (req, res) => {
+    const data = await places.mapSearch(readOrigin(req.query, true), { pageToken: req.query.pageToken });
+    res.json({ ...data, places: await applyModeration(data.places) });
+  }));
+
   // Redirige vers l'image hébergée par Google : toujours la photo actuelle de l'établissement.
   router.get('/places/photo', wrap(async (req, res) => {
     const id = typeof req.query.name === 'string' ? req.query.name.split('/')[1] : '';

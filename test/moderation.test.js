@@ -44,6 +44,7 @@ test('API : accès protégé, masquage et restauration sur toutes les routes Goo
   const places = {
     enabled: true, nearby: async () => [place], search: async () => [place],
     neighborhood: async () => ({ places: [place], nextPageToken: 'next' }),
+    mapSearch: async () => ({ places: [place], nextPageToken: 'next' }),
     details: async () => place, photoUri: async () => 'https://images.example.test/photo',
   };
   const db = openDatabase(':memory:');
@@ -64,6 +65,7 @@ test('API : accès protégé, masquage et restauration sur toutes les routes Goo
     assert.equal((await write({ hidden: true, photos_hidden: true })).status, 200);
     assert.deepEqual(await (await fetch(`${base}/places/nearby?lat=12&lon=-1`)).json(), []);
     assert.deepEqual((await (await fetch(`${base}/places/neighborhood?name=Zogona`)).json()).places, []);
+    assert.deepEqual((await (await fetch(`${base}/places/map?lat=12&lon=-1`)).json()).places, []);
     assert.equal((await fetch(`${base}/places/${ID}`)).status, 404);
     const admin = await (await fetch(`${base}/admin/restaurants?name=Zogona`, { headers: { Authorization: 'Bearer valid' } })).json();
     assert.equal(admin.places[0].moderation.hidden, true);
