@@ -146,19 +146,17 @@ function F(k, h, ...children) {
 const PLACES_SERVER = 'https://winged-eats-1.onrender.com';
 function photoImg(photo, w) {
   if (!photo) return null;
-  const img = el('img', { class: 'ph', src: `${DEMO ? PLACES_SERVER : ''}/api/places/photo?name=${encodeURIComponent(photo.name)}&w=${w}`, alt: '', loading: 'lazy', decoding: 'async' });
+  const img = el('img', { class: 'ph', src: `${PLACES_SERVER}/api/places/photo?name=${encodeURIComponent(photo.name)}&w=${w}`, alt: '', loading: 'lazy', decoding: 'async' });
   const credit = photo.author ? el('span', { class: 'credit', text: `© ${photo.author}` }) : null;
   img.addEventListener('error', () => { img.remove(); if (credit) credit.remove(); });
   return [img, credit];
 }
 
-const DEMO = Boolean(window.WEDemo && window.WEDemo.enabled);
-
 async function api(path, options = {}) {
-  if (DEMO && path !== '/config' && !path.startsWith('/places/')) return window.WEDemo.request(path, { method: options.method, body: options.body });
+  if (path !== '/config' && !path.startsWith('/places/')) throw new Error('Cette fonctionnalité n’est pas encore disponible.');
   let res;
   try {
-    res = await fetch(`${DEMO ? PLACES_SERVER : ''}/api${path}`, { ...options, headers: options.body ? { 'Content-Type': 'application/json' } : undefined, body: options.body ? JSON.stringify(options.body) : undefined });
+    res = await fetch(`${PLACES_SERVER}/api${path}`, { ...options, headers: options.body ? { 'Content-Type': 'application/json' } : undefined, body: options.body ? JSON.stringify(options.body) : undefined });
   } catch {
     throw new Error('Connexion impossible. Vérifiez votre réseau puis réessayez.');
   }
@@ -177,7 +175,8 @@ function cached(key, ttl, loader) {
 }
 const okey = (o) => `${o.latitude.toFixed(4)},${o.longitude.toFixed(4)}`;
 const qs = (o) => `lat=${o.latitude}&lon=${o.longitude}`;
-const getRestaurants = (o) => cached(`list:${okey(o)}`, 30000, () => api(`/restaurants?${qs(o)}`));
+// Les partenaires ne sont pas encore connectés à la version publiée.
+const getRestaurants = async () => [];
 const getMenu = (id) => cached(`menu:${id}`, 60000, () => api(`/restaurants/${id}`));
 const putMenu = (m) => cache.set(`menu:${m.id}`, { at: Date.now(), promise: Promise.resolve(m) });
 
@@ -300,8 +299,7 @@ const cartTotal = () => { const c = store.get('we_cart', null); return c ? c.lin
 function updateCartBadge() {
   const n = cartCount();
   const b = $('#cart-count');
-  b.textContent = String(n);
-  b.hidden = n === 0;
+  if (b) { b.textContent = String(n); b.hidden = n === 0; }
 }
 const favs = () => store.get('we_favs', []);
 const isFav = (id) => favs().includes(id);
@@ -415,31 +413,19 @@ function zoneSheet(cityKey, message) {
 
 function renderLogin(message) {
   chrome('bare');
-  const profile = store.get('we_profile', {});
   let cityKey = (store.get('we_origin', null) || {}).city || 'ouaga';
-  const input = el('input', {
-    type: 'tel', inputmode: 'tel', autocomplete: 'tel', placeholder: '70 12 34 56', 'aria-label': 'Numéro de téléphone',
-    value: (profile.phone || '').replace(/^\+?226\s?/, ''),
-  });
   const err = el('div', null, message ? alertBox(message) : null);
   const segBtns = Object.entries(CITIES).map(([k, c]) => el('button', {
     type: 'button', class: k === cityKey ? 'on' : '',
     onclick: (e) => { cityKey = k; segBtns.forEach((b) => b.classList.toggle('on', b === e.currentTarget)); },
   }, c.name));
-  const go = () => {
-    const digits = input.value.replace(/\D/g, '').replace(/^226/, '');
-    if (digits && digits.length !== 8) { fill(err, alertBox('Le numéro doit comporter 8 chiffres.')); return; }
-    if (digits) store.set('we_profile', { ...store.get('we_profile', {}), phone: `+226 ${digits.match(/\d{2}/g).join(' ')}` });
-    zoneSheet(cityKey);
-  };
+  const go = () => zoneSheet(cityKey);
   setView(el('div', { class: 'login' },
     el('div', { class: 'grid9', 'aria-hidden': 'true' }, ['riz', 'bro', 'pou', 'to', 'piz', 'bis', 'poi', 'bur', 'riz'].map((k) => F(k, 84))),
     el('div', { class: 'sheetw' },
       el('div', { class: 'brand' }, logo(40), el('div', { class: 'wm' }, 'Winged ', el('span', { text: 'Eats' }))),
-      el('p', { style: 'margin:10px 0 14px;font-size:14px;color:#5A463E', text: 'Vos plats préférés de Ouaga et de Bobo, livrés à moto.' }),
+      el('p', { style: 'margin:10px 0 14px;font-size:14px;color:#5A463E', text: 'Découvrez les restaurants de Ouaga et de Bobo.' }),
       el('form', { onsubmit: (e) => { e.preventDefault(); go(); } },
-        el('div', { class: 'phoneinp' }, el('div', { class: 'cc' }, el('span', { class: 'flag' }, el('i')), '+226'), input),
-        el('div', { class: 'm', style: 'margin:8px 0 12px', text: DEMO ? 'Version de démonstration : restaurants fictifs, commandes simulées dans votre navigateur.' : 'Votre numéro sert au suivi de vos commandes. La vérification par SMS arrive bientôt.' }),
         err,
         el('button', { class: 'btn', type: 'submit' }, 'Continuer')),
       el('div', { class: 'divi', text: 'Ville de livraison' }),
@@ -474,7 +460,6 @@ function homeView(list, origin, redraw) {
   const browsing = Boolean(homeState.category) || homeState.filters.size > 0;
   const cats = googleOn() ? appConfig.categories.map((c) => c.key) : [...new Set(list.map(catKeyOf))];
   const minFee = inZone.length ? Math.min(...inZone.map((r) => r.delivery_fee)) : null;
-  const hasOrders = Object.keys(store.get('we_orders', {})).length > 0;
   const shown = filterPartners(list);
   const reset = () => { homeState.category = null; homeState.filters.clear(); redraw(); };
   const toggleFilter = (k) => { if (homeState.filters.has(k)) homeState.filters.delete(k); else homeState.filters.add(k); redraw(); };
@@ -488,13 +473,12 @@ function homeView(list, origin, redraw) {
   const partnersHs = inZone.length ? el('div', { class: 'hs' }, [...inZone].sort((a, b) => a.distance_km - b.distance_km).slice(0, 6).map((r) => partnerCard(r))) : null;
 
   return [
-    DEMO ? el('div', { class: 'demo', style: 'margin:calc(10px + env(safe-area-inset-top)) 16px 0' }, I('info'), el('span', null, el('b', { text: 'Version de démonstration · ' }), 'certains restaurants sont fictifs ; les commandes sont simulées.')) : null,
     googleError ? el('div', { class: 'pad' }, alertBox(`Restaurants Google indisponibles : ${googleError}`, true), el('button', { class: 'chip', type: 'button', onclick: () => location.reload() }, 'Réessayer')) : null,
     el('header', { class: 'home-header' },
     el('div', { class: 'pad fl sp', style: 'padding-top:calc(14px + env(safe-area-inset-top))' },
       el('button', { class: 'addr', type: 'button', onclick: () => zoneSheet(origin.city || 'ouaga'), 'aria-label': `Adresse : ${origin.label}. Modifier` },
         el('div', { class: 'm', text: 'Livrer à' }), el('div', { class: 't' }, `${origin.label}, ${city.name}`, I('down'))),
-      el('a', { class: 'circ', href: '#/orders', 'aria-label': 'Mes commandes' }, I('bell'), hasOrders ? el('i', { class: 'dot' }) : null)),
+      el('a', { class: 'circ', href: '#/favorites', 'aria-label': 'Mes favoris' }, I('heart'))),
     el('div', { class: 'pad home-intro' },
       el('h1', null, firstName ? `Bonjour ${firstName},` : 'Bonjour,', el('br'), el('em', { text: 'on se régale ?' })),
       el('p', { class: 'm', text: 'Les bonnes adresses de votre quartier, ici.' }),
@@ -502,8 +486,8 @@ function homeView(list, origin, redraw) {
     !browsing ? el('div', { class: 'pad', style: 'margin-top:14px' }, el('div', { class: 'banner' },
       el('div', { class: 'banner-copy' },
         el('div', { class: 'banner-label', text: "Les saveurs d’ici ✦" }),
-        el('div', { class: 'bt', text: `Le meilleur de ${city.short}, chez vous.` }),
-        el('div', { class: 'bs', text: minFee !== null ? `Livraison dès ${fmtF(minFee)} · paiement en espèces` : 'Les restaurants partenaires arrivent bientôt.' }),
+        el('div', { class: 'bt', text: `Découvrez les restaurants de ${city.short}.` }),
+        el('div', { class: 'bs', text: 'Consultez les adresses et contactez les établissements.' }),
         el('button', { class: 'chip', type: 'button', onclick: toPartners }, 'Je découvre', I('right'))),
       el('div', { class: 'banner-art', 'aria-hidden': 'true' }, useSvg('f-meal')))) : null,
     el('div', { class: 'chips', style: 'margin-top:12px' },
@@ -519,18 +503,12 @@ function homeView(list, origin, redraw) {
       onclick: () => { homeState.category = homeState.category === k ? null : k; redraw(); },
     }, F(CAT_FOOD[k] || 'riz', 52), catInfo(k).label))),
     el('div', { class: 'chips', style: 'margin-top:12px' },
-      el('a', { class: 'chip', href: '#/offres' }, I('tag'), 'Offres'),
-      el('button', { class: homeState.filters.has('rating') ? 'chip on' : 'chip', type: 'button', onclick: () => toggleFilter('rating') }, I('star'), '4,5 et +'),
-      el('button', { class: homeState.filters.has('fast') ? 'chip on' : 'chip', type: 'button', onclick: () => toggleFilter('fast') }, 'Moins de 30 min'),
-      el('button', { class: homeState.sort !== 'distance' ? 'chip on' : 'chip', type: 'button', onclick: sortSheet }, 'Prix', I('down'))),
+      el('button', { class: homeState.filters.has('rating') ? 'chip on' : 'chip', type: 'button', onclick: () => toggleFilter('rating') }, I('star'), '4,5 et +')),
     !browsing ? popular : null,
     !browsing && partnersHs ? [sec('Commander maintenant', `Livraison à ${origin.label}`, partnersHs), partnersHs] : null,
     !browsing ? dishesBlock(inZone) : null,
     el('div', { id: 'partners', style: 'scroll-margin-top:10px' },
-      sec(browsing ? (homeState.category ? catInfo(homeState.category).label : 'Résultats') : 'Restaurants partenaires', `${plural(shown.length, 'restaurant')} où commander`),
       browsing ? el('div', { class: 'pad', style: 'margin:-4px 0 10px' }, el('button', { class: 'chip', type: 'button', onclick: reset }, I('x'), 'Réinitialiser')) : null),
-    shown.length ? el('div', { class: 'vlist' }, shown.map((r) => partnerCard(r)))
-      : el('div', { class: 'pad' }, alertBox(googleOn() ? 'Aucun restaurant partenaire ici pour l’instant. Découvrez ci-dessous les établissements de la ville.' : 'Aucun restaurant ne correspond.', true)),
     googleBlock({
       title: homeState.category ? `${catInfo(homeState.category).label} à ${city.short}` : `À découvrir à ${city.short}`,
       sub: 'Pas encore disponibles à la commande', layout: 'v',
@@ -574,7 +552,6 @@ async function renderHome(alive) {
   const redraw = () => fill(body, homeView(list, origin, redraw));
   redraw();
   setView(body);
-  showLiveOrder(alive);
 }
 
 async function showLiveOrder(alive) {
@@ -853,7 +830,6 @@ function renderCart(alive) {
       }
     },
   },
-    DEMO ? alertBox("Démonstration : aucune commande n'est transmise à un restaurant et aucun paiement n'est effectué.", true) : null,
     el('div', { class: 'fl', style: 'gap:10px;padding:10px 0;border-bottom:1px solid var(--line)' },
       el('span', { class: 'circ' }, I('pin')),
       el('div', { style: 'flex:1' }, el('div', { class: 't', text: `${origin.label}, ${cityOf(origin).name}` }), el('div', { class: 'm', text: 'Adresse de livraison' })),
@@ -1238,7 +1214,7 @@ async function renderSearch(alive) {
 // ---------------------------------------------------------------------
 
 function pinEl(it) {
-  return el('button', { class: `mpin${it.kind === 'osm' ? ' g' : ''}`, type: 'button', 'aria-label': `${it.name}, ${fmtKm(it.km)}` },
+  return el('button', { class: `mpin${it.kind === 'osm' || it.kind === 'google' ? ' g' : ''}`, type: 'button', 'aria-label': `${it.name}, ${fmtKm(it.km)}` },
     el('span', { class: 'pi' }, I('store')), it.label ? el('span', { class: 'pl', text: it.label }) : null);
 }
 
@@ -1250,9 +1226,93 @@ function mapDistance(a, b) {
   return 12742 * Math.asin(Math.sqrt(Math.min(1, h)));
 }
 
+let mapsLoading = null;
+let mapsAuthFailed = false;
+function loadGoogleMaps(key) {
+  if (window.google?.maps?.importLibrary) return Promise.resolve();
+  if (mapsLoading) return mapsLoading;
+  mapsLoading = new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Google Maps ne répond pas.')), 15000);
+    window.__weMapsReady = () => { clearTimeout(timer); resolve(); };
+    window.gm_authFailure = () => {
+      clearTimeout(timer);
+      mapsAuthFailed = true;
+      reject(new Error('La clé Google Maps a été refusée.'));
+      if (location.hash.startsWith('#/map')) route();
+    };
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&v=weekly&loading=async&language=fr&region=BF&callback=__weMapsReady`;
+    script.async = true;
+    script.onerror = () => { clearTimeout(timer); reject(new Error('Chargement de Google Maps impossible.')); };
+    document.head.append(script);
+  }).catch((error) => { mapsLoading = null; throw error; });
+  return mapsLoading;
+}
+
+async function renderGoogleMap(origin, alive) {
+  chrome('nav', 'map');
+  const host = el('div', { class: 'gmap', 'aria-label': 'Carte Google des restaurants' });
+  const sheet = el('div', { class: 'msheet', 'aria-live': 'polite' });
+  const search = el('button', { class: 'chip', type: 'button', style: 'background:#fff' }, 'Rechercher dans cette zone');
+  const over = el('div', { class: 'over' },
+    el('a', { class: 'searchpill', href: '#/search' }, I('search'), el('span', { class: 'm', text: 'Rechercher un restaurant' })),
+    el('div', { style: 'margin-top:10px' }, search));
+  setView(el('div', { class: 'mapw' }, host, over, sheet));
+  fill(sheet, el('div', { class: 'grab' }), el('p', { class: 'm', text: 'Chargement de la carte…' }));
+  try {
+    await loadGoogleMaps(appConfig.google.maps_key);
+    const { Map: GoogleMap } = await google.maps.importLibrary('maps');
+    const { AdvancedMarkerElement } = await google.maps.importLibrary('marker');
+    if (!alive()) return;
+    const map = new GoogleMap(host, { center: { lat: origin.latitude, lng: origin.longitude }, zoom: 14, mapId: appConfig.google.map_id || 'DEMO_MAP_ID', disableDefaultUI: true, zoomControl: true, clickableIcons: false, gestureHandling: 'greedy' });
+    let markers = [];
+    let request = 0;
+    onCleanup(() => { request++; markers.forEach((marker) => { marker.map = null; }); google.maps.event.clearInstanceListeners(map); });
+    async function findPlaces() {
+      const current = ++request;
+      search.disabled = true;
+      fill(sheet, el('div', { class: 'grab' }), el('p', { class: 'm', text: 'Recherche des restaurants…' }));
+      try {
+        const center = map.getCenter();
+        const places = await gNearby({ latitude: center.lat(), longitude: center.lng() });
+        if (!alive() || current !== request) return;
+        markers.forEach((marker) => { marker.map = null; });
+        markers = [];
+        const located = places.filter((p) => Number.isFinite(p.latitude) && Number.isFinite(p.longitude));
+        function show(p) {
+          fill(sheet, el('div', { class: 'grab' }),
+            p ? el('a', { class: 'fl', href: `#/p/${encodeURIComponent(p.id)}`, style: 'gap:10px' },
+              el('div', { style: 'width:96px' }, F(placeKey(p), 70, photoImg(p.photo, 240))),
+              el('div', { style: 'flex:1' }, el('div', { class: 't', text: p.name }),
+                el('div', { class: 'm', text: [p.address, p.rating ? `★ ${fmtRating(p.rating)}` : null, p.open_now === true ? 'Ouvert' : p.open_now === false ? 'Fermé' : null].filter(Boolean).join(' · ') }),
+                el('span', { class: 'soonp', text: 'Voir la fiche du restaurant' })), I('right'))
+              : el('p', { class: 'm', text: 'Aucun restaurant localisé dans cette zone.' }),
+            el('p', { class: 'm', style: 'font-size:11px', text: `${located.length} résultat(s) · Google renvoie au maximum 20 établissements par recherche. Déplacez la carte pour explorer une autre zone.` }),
+            googleCredit());
+        }
+        for (const p of located) {
+          const button = pinEl({ kind: 'google', name: p.name, km: p.distance_km, label: null });
+          button.classList.add('gm');
+          button.addEventListener('click', () => show(p));
+          markers.push(new AdvancedMarkerElement({ map, position: { lat: p.latitude, lng: p.longitude }, content: button, title: p.name }));
+        }
+        show(located[0]);
+      } catch (error) {
+        if (alive() && current === request) fill(sheet, el('div', { class: 'grab' }), alertBox(error.message), el('button', { class: 'chip', type: 'button', onclick: findPlaces }, 'Réessayer'));
+      } finally { if (alive() && current === request) search.disabled = false; }
+    }
+    search.addEventListener('click', findPlaces);
+    await findPlaces();
+  } catch (error) {
+    if (!alive()) return;
+    fill(sheet, el('div', { class: 'grab' }), alertBox(error.message), el('p', { class: 'm', text: 'Vérifiez la clé et les restrictions Google Maps.' }), el('button', { class: 'chip', type: 'button', onclick: route }, 'Réessayer'));
+  }
+}
+
 async function renderMap(alive) {
   const origin = store.get('we_origin', null);
   if (!origin) return renderLogin();
+  if (appConfig.google.maps_key && googleOn() && !mapsAuthFailed) return renderGoogleMap(origin, alive);
   chrome('nav', 'map');
   const wrap = el('div', { class: 'mapw' }, planSvg());
   const sheet = el('div', { class: 'msheet' }, el('div', { class: 'grab' }), el('div', { class: 'skel', style: 'height:70px' }));
@@ -1271,7 +1331,8 @@ async function renderMap(alive) {
   const markers = new Map();
   let gmap = null;
   let selected = null;
-  let osmStatus = 'Chargement des commerces OpenStreetMap…';
+  const mapNotice = mapsAuthFailed ? 'Clé Google Maps refusée' : !googleOn() ? 'Google Places indisponible' : 'Carte Google non configurée';
+  let osmStatus = `${mapNotice} · chargement OpenStreetMap…`;
   let addOsmPins = null;
   const paintSheet = () => {
     const it = all.find((x) => x.id === selected) || visible()[0];
@@ -1326,11 +1387,7 @@ async function renderMap(alive) {
   }
   const chipToggle = (label, key) => el('button', { class: filters[key] ? 'chip on' : 'chip', type: 'button', style: filters[key] ? '' : 'background:#fff', onclick: (e) => { filters[key] = !filters[key]; e.currentTarget.classList.toggle('on', filters[key]); e.currentTarget.style.background = filters[key] ? '' : '#fff'; applyFilters(); } }, label);
   const over = el('div', { class: 'over' },
-    el('a', { class: 'searchpill', href: '#/search' }, I('search'), el('span', { class: 'm', style: 'font-size:13px', text: 'À emporter près de vous' })),
-    el('div', { class: 'fl', style: 'gap:6px;margin-top:10px;flex-wrap:wrap' },
-      chipToggle('Ouvert', 'open'),
-      el('a', { class: 'chip', href: '#/offres', style: 'background:#fff' }, 'Prix', I('down')),
-      el('a', { class: 'chip', href: '#/search', style: 'background:#fff' }, 'Cuisine', I('down'))));
+    el('a', { class: 'searchpill', href: '#/search' }, I('search'), el('span', { class: 'm', style: 'font-size:13px', text: 'Rechercher un restaurant' })));
   try {
     const host = el('div', { class: 'gmap' });
     fill(wrap, host, over, sheet);
@@ -1359,36 +1416,8 @@ async function renderMap(alive) {
     applyFilters();
   } catch (e) {
     if (!alive()) return;
-    toast(e.message, 'info');
-  }
-  if (!gmap) {
-  // Plan indicatif : les repères conservent leurs positions relatives.
-  const layout = () => {
-    const radius = Math.max(1.5, ...all.map((it) => it.km * 1.25));
-    const w = wrap.clientWidth;
-    const h = wrap.clientHeight - 190;
-    const cx = w / 2;
-    const cy = 120 + h / 2;
-    const scale = (Math.min(w, h) / 2 - 30) / radius;
-    const kx = 111.32 * Math.cos((origin.latitude * Math.PI) / 180);
-    fill(wrap, planSvg(), over, el('div', { class: 'me', style: `left:${cx}px;top:${cy}px` }, el('span', { class: 'pulse' }), el('i')),
-      el('div', { class: 'mnote', style: 'top:108px', text: "Carte indisponible · plan indicatif, non géographique" }), sheet);
-    pins.clear();
-    for (const it of all) {
-      const p = pinEl(it);
-      p.style.left = `${cx + (it.lng - origin.longitude) * kx * scale}px`;
-      p.style.top = `${cy - (it.lat - origin.latitude) * 110.57 * scale}px`;
-      p.addEventListener('click', () => select(it.id));
-      pins.set(it.id, p);
-      wrap.append(p);
-    }
-    applyFilters();
-  };
-  layout();
-  const onResize = () => layout();
-  window.addEventListener('resize', onResize);
-  onCleanup(() => window.removeEventListener('resize', onResize));
-  addOsmPins = () => layout();
+    fill(wrap, el('div', { class: 'pad' }, alertBox(`Carte indisponible : ${e.message}`), el('button', { class: 'btn lt', type: 'button', onclick: route }, 'Réessayer')));
+    return;
   }
   WEOSM.nearby(origin.city || 'ouaga').then((places) => {
     if (!alive()) return;
@@ -1400,7 +1429,7 @@ async function renderMap(alive) {
     })).sort((a, b) => a.km - b.km).slice(0, 100);
     all.push(...additions);
     all.sort((a, b) => a.km - b.km);
-    osmStatus = `${additions.length} commerces OpenStreetMap affichés à 8 km du centre-ville · horaires OSM non vérifiés`;
+    osmStatus = `${mapNotice} · ${additions.length} commerces OpenStreetMap à 8 km du centre-ville · horaires non vérifiés`;
     addOsmPins(additions);
     applyFilters();
   }).catch((error) => {
@@ -1462,8 +1491,8 @@ async function renderPlace(id, alive) {
 async function renderFavorites(alive) {
   const origin = store.get('we_origin', null);
   if (!origin) return renderLogin('Choisissez une adresse pour afficher vos favoris.');
-  chrome('nav', 'account');
-  const ids = favs();
+  chrome('nav', 'favorites');
+  const ids = favs().filter((id) => typeof id === 'string');
   const head = topbar('Mes favoris', { back: '#/account' });
   if (!ids.length) return setView(head, emptyState('pou', 'Aucun favori', 'Enregistrez vos restaurants préférés sur cet appareil.', el('a', { class: 'btn', href: '#/', style: 'width:auto;display:inline-flex' }, 'Découvrir les restaurants')));
   const body = el('div', { class: 'vlist', 'aria-live': 'polite' });
@@ -1574,27 +1603,16 @@ function renderAccount() {
   const origin = store.get('we_origin', null);
   const ini = (profile.name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
   const row = (ic, title, sub, onclick, right) => el('button', { type: 'button', onclick }, I(ic), el('span', { class: 'grow' }, title, sub ? [el('br'), el('span', { class: 'm', text: sub })] : null), right || I('right'));
-  const soon = (title, text) => () => infoSheet(title, [['Bientôt disponible', text]]);
   setView(
     el('div', { class: 'pad fl sp', style: 'padding-top:calc(20px + env(safe-area-inset-top))' },
       el('div', null, el('div', { style: 'font:800 24px Inter,sans-serif;letter-spacing:-.02em', text: profile.name || 'Bienvenue' }),
-        el('div', { class: 'm', text: profile.phone || 'Votre numéro est enregistré à la première commande' })),
+        el('div', { class: 'm', text: profile.phone || 'Restaurants et favoris' })),
       el('div', { class: 'av', style: 'width:56px;height:56px;font-size:18px' }, ini || I('user'))),
-    el('div', { class: 'pad', style: 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0 6px' },
-      [['wallet', 'Portefeuille', soon('Portefeuille', 'Orange Money et Moov Money arrivent bientôt. Aujourd’hui, le paiement se fait en espèces à la livraison.')],
-        ['tag', 'Promotions', () => { location.hash = '#/offres'; }],
-        ['help', 'Aide', () => infoSheet('Aide', HELP)]].map(([ic, l, fn]) => el('button', { type: 'button', onclick: fn, style: 'background:#F4ECE4;border:0;border-radius:14px;padding:12px 6px;display:grid;justify-items:center;gap:4px;font-weight:700;font-size:12px;cursor:pointer' }, I(ic), l))),
-    el('div', { class: 'pad' }, el('button', { type: 'button', onclick: soon('Parrainage', '1 000 F offerts à vous et à votre ami sur la prochaine commande : le parrainage ouvrira avec le paiement mobile.'), style: 'width:100%;text-align:left;border:0;cursor:pointer;background:#22150F;color:#fff;border-radius:14px;padding:12px;display:flex;gap:10px;align-items:center' },
-      el('span', { class: 'circ', style: 'background:#F6B21B;color:#22150F' }, I('gift')),
-      el('div', null, el('div', { class: 't', text: 'Parrainez un ami' }), el('div', { style: 'font-size:12px;color:#E9D8CC', text: '1 000 F offerts à chacun · bientôt' })))),
     el('div', { class: 'list', style: 'margin-top:6px' },
-      row('wallet', 'Moyens de paiement', 'Espèces · Orange Money et Moov Money bientôt', soon('Moyens de paiement', 'Le paiement mobile sera activé dès la signature avec Orange et Moov.')),
       row('pin', 'Ville', origin ? `${cityOf(origin).name} · ${origin.label}` : 'Non choisie', () => zoneSheet((origin && origin.city) || 'ouaga'), el('span', { class: 'chip', style: 'font-size:11px', text: 'Changer' })),
       row('globe', 'Langue', 'Français · Mooré et Dioula bientôt', () => infoSheet('Langue', [['Français', 'Langue actuelle de l’application.'], ['Mooré', 'Traduction en préparation.'], ['Dioula', 'Traduction en préparation.']])),
-      row('store', 'Inscrire mon restaurant', 'Espace restaurateur et abonnements', () => { location.hash = '#/abonnement/r'; }),
-      row('moto', 'Devenir livreur Winged', 'Aperçu de l’application livreur', () => { location.hash = '#/livreur'; }),
       row('heart', 'Mes favoris', 'Restaurants enregistrés sur cet appareil', () => { location.hash = '#/favorites'; }),
-      row('clock', 'Mes commandes', null, () => { location.hash = '#/orders'; }),
+      row('help', 'Aide', null, () => infoSheet('Aide', HELP)),
       row('gear', 'Paramètres', 'Confidentialité, données, à propos', () => infoSheet('Paramètres', PRIVACY, el('button', {
         class: 'btn lt', type: 'button', style: 'margin-top:14px;color:var(--red2)',
         onclick: async () => {
@@ -1607,14 +1625,11 @@ function renderAccount() {
     el('p', { class: 'm', style: 'text-align:center', text: 'Ouagadougou · Bobo-Dioulasso · version MVP' }));
 }
 const HELP = [
-  ['Comment payer ?', 'En espèces à la livraison. Orange Money et Moov Money arrivent bientôt.'],
-  ['À quoi sert le code à 4 chiffres ?', 'Il garantit que la commande est remise à la bonne personne : donnez-le au livreur.'],
-  ['Puis-je annuler ?', "Oui, tant que le restaurant n'a pas accepté la commande."],
-  ['Pourquoi un repère ?', 'À Ouaga et à Bobo, c’est le repère (portail, boutique, école…) qui guide le livreur.'],
+  ['Puis-je commander ?', 'Les commandes ne sont pas encore disponibles. Vous pouvez contacter les restaurants via leurs fiches.'],
+  ['Comment retrouver un restaurant ?', 'Utilisez la recherche, la carte ou vos favoris.'],
 ];
 const PRIVACY = [
   ['Sur cet appareil', 'Adresse, panier, favoris, recherches et liste de vos commandes.'],
-  ['Envoyé au restaurant', 'Nom, téléphone, repère et note, uniquement pour préparer et remettre la commande.'],
   ['Restaurants de la ville', 'Les favoris Google conservent uniquement leur identifiant sur cet appareil ; noms, notes, horaires et photos sont chargés en direct.'],
 ];
 
@@ -1646,6 +1661,10 @@ function route() {
   closeAllSheets();
   window.scrollTo({ top: 0, behavior: 'instant' });
   const [a, b] = (location.hash.replace(/^#\/?/, '') || '').split('/').filter(Boolean);
+  if (['r', 'cart', 'order', 'orders', 'livreur', 'abonnement'].includes(a)) {
+    chrome('nav', null);
+    return setView(topbar('Bientôt disponible'), el('div', { class: 'pad' }, alertBox('Les commandes et espaces partenaires ne sont pas encore disponibles.', true)));
+  }
   if (a === 'r' && b) return renderRestaurant(Number(b), alive);
   if (a === 'p' && b) return renderPlace(decodeURIComponent(b), alive);
   if (a === 'cart') return renderCart(alive);
@@ -1671,7 +1690,6 @@ navCount = 0;
   const timer = setTimeout(() => controller.abort(), 8000);
   try {
     appConfig = await api('/config', { signal: controller.signal });
-    if (DEMO) appConfig.google.maps_key = null;
     if (!appConfig.google.places) googleError = 'Google Places n’est pas configuré sur le serveur.';
   } catch (e) { googleError = e.message; } finally { clearTimeout(timer); }
   route();
