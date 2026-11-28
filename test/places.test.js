@@ -99,6 +99,7 @@ test('configuration publique : catégories et clé navigateur, jamais la clé se
   assert.equal(data.google.places, true);
   assert.equal(data.google.maps_key, 'cle-navigateur');
   assert.ok(data.categories.some((c) => c.key === 'maquis'));
+  assert.deepEqual(data.moderation.excluded_osm_ids, require('../server/moderation.json').excluded_osm_ids);
   assert.ok(!JSON.stringify(data).includes('cle-de-test'));
 });
 
@@ -134,6 +135,21 @@ test('recherche par catégorie : établissements trop éloignés écartés', asy
   assert.equal(data[0].category, 'pizza');
   const bad = await fetch(`${base}/api/places/search?lat=${ORIGIN.latitude}&lon=${ORIGIN.longitude}&cat=inconnue`);
   assert.equal(bad.status, 400);
+});
+
+test('modération : seules les fiches validées comme exclues sont masquées', async () => {
+  const requests = [];
+  const service = createPlacesService(GOOGLE, { fetchImpl: fakeFetch(requests), excludedPlaceIds: [PLACE_ID] });
+  assert.deepEqual(await service.nearby(ORIGIN), []);
+  const search = await service.search(ORIGIN, { text: 'restaurant' });
+  assert.deepEqual(search, []);
+  const neighborhood = await service.neighborhood(ORIGIN, { name: 'Zogona' });
+  assert.ok(!neighborhood.places.some((p) => p.id === PLACE_ID));
+  const calls = requests.length;
+  await assert.rejects(service.details(PLACE_ID, ORIGIN), (err) => err.status === 404);
+  await assert.rejects(service.photoUri(PHOTO, 400), (err) => err.status === 404);
+  assert.equal(requests.length, calls);
+  assert.throws(() => createPlacesService(GOOGLE, { excludedPlaceIds: ['../incorrect'] }), /modération/);
 });
 
 test('recherche par quartier : pagination et validation avant appel Google', async () => {

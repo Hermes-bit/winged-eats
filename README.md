@@ -60,6 +60,7 @@ Fonctionnement :
 - Sur GitHub Pages, la carte Google affiche au maximum 20 établissements par recherche. Déplacer la carte puis choisir « Rechercher dans cette zone » lance une nouvelle recherche ; Google ne garantit pas que tous les établissements soient répertoriés.
 - Si la clé de carte manque ou est refusée, GitHub Pages utilise la carte et les établissements OpenStreetMap ; ces données ne sont pas mélangées aux données Google.
 - GitHub Pages n'affiche plus les données ou commandes de démonstration ; les commandes et l'espace partenaire de cette version restent indisponibles.
+- Les fiches suspectes sont examinées manuellement : après vérification, ajouter leur identifiant Google à `excluded_place_ids` ou leur identifiant OpenStreetMap (`node/…`, `way/…`, `relation/…`) à `excluded_osm_ids` dans `server/moderation.json`, puis redéployer. L'exclusion masque la fiche correspondante dans Winged Eats sans la modifier chez Google ou OpenStreetMap ; aucune fiche n'est exclue automatiquement.
 - Ils sont classés dans des catégories façon plateforme de livraison : Maquis, Grillades, Africaine, Fast-food, Pizza, Chawarma, Asiatique, Européenne, Café, Boulangerie, Desserts.
 - Ce sont des fiches vitrines (appeler, itinéraire) avec la mention « Bientôt sur Winged Eats ». Seuls les restaurants partenaires sont commandables.
 - Le menu des établissements Google n'est pas garanti : la fiche propose le site du restaurant lorsqu'il est disponible, sinon Google Maps, et invite à contacter le restaurant. Aucun plat ni prix n'est inventé.

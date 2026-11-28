@@ -3,6 +3,10 @@
 const express = require('express');
 const { ApiError } = require('../errors');
 const { publicCategories } = require('../services/places');
+const { excluded_osm_ids: excludedOsmIds } = require('../moderation.json');
+if (!Array.isArray(excludedOsmIds) || !excludedOsmIds.every((id) => typeof id === 'string' && /^(node|way|relation)\/[1-9]\d*$/.test(id))) {
+  throw new Error('Liste de modération OpenStreetMap invalide');
+}
 
 // Express 4 ne transmet pas les erreurs des fonctions async : on les redirige vers le gestionnaire commun.
 const wrap = (fn) => (req, res, next) => fn(req, res, next).catch(next);
@@ -31,6 +35,7 @@ function createPlacesRouter(places, google) {
         map_id: google.mapId,
       },
       categories: publicCategories(),
+      moderation: { excluded_osm_ids: excludedOsmIds },
     });
   });
 

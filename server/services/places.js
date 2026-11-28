@@ -10,6 +10,7 @@
 
 const { ApiError } = require('../errors');
 const { distanceKm } = require('./geo');
+const { excluded_place_ids: reviewedExclusions } = require('../moderation.json');
 
 // Catégorisation façon plateforme de livraison. `query` sert à la recherche par catégorie,
 // `types` et `words` à classer un établissement d'après ses types Google et son nom.
@@ -129,7 +130,9 @@ function createLimiter({ perMinute, perDay, now = () => Date.now() }) {
   };
 }
 
-function createPlacesService(google, { fetchImpl = globalThis.fetch } = {}) {
+function createPlacesService(google, { fetchImpl = globalThis.fetch, excludedPlaceIds = reviewedExclusions } = {}) {
+  if (!Array.isArray(excludedPlaceIds) || !excludedPlaceIds.every(isValidPlaceId)) throw new Error('Liste de modération Google invalide');
+  const excluded = new Set(excludedPlaceIds);
   const enabled = Boolean(google && google.placesKey);
   const limiter = createLimiter({ perMinute: google?.maxCallsPerMinute || 120, perDay: google?.maxCallsPerDay || 3000 });
   const radius = google?.searchRadiusM || 5000;
@@ -172,7 +175,7 @@ function createPlacesService(google, { fetchImpl = globalThis.fetch } = {}) {
   }
 
   const circle = (origin, r = radius) => ({ circle: { center: { latitude: origin.latitude, longitude: origin.longitude }, radius: r } });
-  const keepOpenBusinesses = (places) => (places || []).filter((p) => p.businessStatus !== 'CLOSED_PERMANENTLY');
+  const keepOpenBusinesses = (places) => (places || []).filter((p) => p.businessStatus !== 'CLOSED_PERMANENTLY' && !excluded.has(p.id));
 
   return {
     enabled,
@@ -242,6 +245,7 @@ function createPlacesService(google, { fetchImpl = globalThis.fetch } = {}) {
 
     async details(placeId, origin) {
       if (!isValidPlaceId(placeId)) throw new ApiError(400, 'Identifiant Google invalide');
+      if (excluded.has(placeId)) throw new ApiError(404, 'Établissement indisponible sur Winged Eats');
       const place = await call(`/places/${encodeURIComponent(placeId)}?languageCode=fr&regionCode=BF`, { fields: DETAIL_FIELDS.join(',') });
       return normalizeDetails(place, origin);
     },
@@ -249,6 +253,7 @@ function createPlacesService(google, { fetchImpl = globalThis.fetch } = {}) {
     // Renvoie l'URL temporaire de l'image hébergée par Google (rien n'est téléchargé ni stocké ici).
     async photoUri(photoName, width) {
       if (!isValidPhotoName(photoName)) throw new ApiError(400, 'Nom de photo invalide');
+      if (excluded.has(photoName.split('/')[1])) throw new ApiError(404, 'Établissement indisponible sur Winged Eats');
       const w = Math.min(1200, Math.max(100, Math.round(Number(width) || 480)));
       const data = await call(`/${photoName}/media?maxWidthPx=${w}&skipHttpRedirect=true`);
       if (!data.photoUri || !/^https?:\/\//.test(data.photoUri)) throw new ApiError(502, 'Photo Google indisponible');
