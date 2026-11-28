@@ -120,6 +120,26 @@ body.bare #app { padding-bottom: 0; }
 .mapw .maplibregl-ctrl-bottom-right { bottom: 150px; }
 .trackw .maplibregl-ctrl-bottom-right { bottom: 90px; }
 .mapw .mpin.gm { position: relative; transform: none; }
+.mapw .mpin .pi {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  width: auto;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 11px;
+  border: 1px solid #ffffffd9;
+  border-radius: 999px;
+  background: #fff;
+  color: #24211f;
+  box-shadow: 0 3px 12px #23191338;
+  transition: background .2s, color .2s, box-shadow .2s, transform .2s;
+}
+.mapw .mpin .pi .ic { width: 18px; height: 18px; stroke-width: 2.2; }
+.mapw .mpin .pin-rating { font-size: 15px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.mapw .mpin.on .pi { background: #241e1b; border-color: #241e1b; color: #fff; transform: scale(1.08); box-shadow: 0 4px 14px #23191359; }
+.mapw .mpin:focus-visible { outline: 2px solid #a93628; outline-offset: 3px; border-radius: 999px; }
+@media (prefers-reduced-motion: reduce) { .mapw .mpin .pi { transition: none; } }
 .msheet { max-height: 45%; overflow-y: auto; }
 .msheet a.m { text-decoration: underline; }
 .map-failure { position: absolute; top: 115px; left: 16px; right: 16px; z-index: 4; }

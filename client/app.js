@@ -1376,8 +1376,11 @@ async function renderSearch(alive) {
 // ---------------------------------------------------------------------
 
 function pinEl(it) {
-  return el('button', { class: `mpin${it.kind === 'osm' || it.kind === 'google' ? ' g' : ''}`, type: 'button', 'aria-label': `${it.name}, ${fmtKm(it.km)}` },
-    el('span', { class: 'pi' }, I('store')), it.label ? el('span', { class: 'pl', text: it.label }) : null);
+  const rated = Number.isFinite(it.rating) && it.rating > 0 && it.rating <= 5;
+  const details = [it.name, rated ? `note ${fmtRating(it.rating)} sur 5` : null, fmtKm(it.km), it.label].filter(Boolean).join(', ');
+  return el('button', { class: `mpin${it.kind === 'osm' || it.kind === 'google' ? ' g' : ''}`, type: 'button', 'aria-label': details, 'aria-pressed': 'false' },
+    el('span', { class: 'pi' }, I('cutlery'), rated ? el('span', { class: 'pin-rating', text: fmtRating(it.rating) }) : null),
+    it.label ? el('span', { class: 'pl', text: it.label }) : null);
 }
 
 function mapDistance(a, b) {
@@ -1462,6 +1465,10 @@ async function renderGoogleMap(origin, alive, target = null) {
     onCleanup(() => { request++; markers.forEach((marker) => { marker.map = null; }); google.maps.event.clearInstanceListeners(map); });
     function show() {
       const p = selectedPlace;
+      markers.forEach((marker, id) => {
+        marker.content.classList.toggle('on', id === p?.id);
+        marker.content.setAttribute('aria-pressed', String(id === p?.id));
+      });
       fill(sheet, el('div', { class: 'grab' }),
         p ? el('a', { class: 'fl', href: `#/p/${encodeURIComponent(p.id)}`, style: 'gap:10px' },
           el('div', { style: 'width:96px' }, placePhoto(p.photo, 240, 70)),
@@ -1475,7 +1482,7 @@ async function renderGoogleMap(origin, alive, target = null) {
         googleCredit());
     }
     function addMarker(p) {
-      const button = pinEl({ kind: 'google', name: p.name, km: p.distance_km, label: null });
+      const button = pinEl({ kind: 'google', name: p.name, km: p.distance_km, rating: p.rating, label: null });
       button.classList.add('gm');
       button.addEventListener('click', () => {
         map.panTo({ lat: p.latitude, lng: p.longitude });
@@ -1645,7 +1652,7 @@ async function renderMap(alive, placeId = null) {
   };
   const select = (id) => {
     selected = id;
-    pins.forEach((p, k) => p.classList.toggle('on', k === id));
+    pins.forEach((p, k) => { p.classList.toggle('on', k === id); p.setAttribute('aria-pressed', String(k === id)); });
     markers.forEach((m, k) => { m.zIndex = k === id ? 1000 : null; });
     paintSheet();
   };
