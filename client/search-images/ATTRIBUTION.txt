@@ -1,0 +1,6 @@
+Images de plats : Fancy Fox Featured Seasonal Recipes
+Source : https://github.com/olivierdh/fancy-fox-featured-seasonal-recipes
+Revision : ab18761b488f4a10f5c3e797697fd7afdd2b3c7d
+Licence : CC0 1.0 Universal, https://creativecommons.org/publicdomain/zero/1.0/
+La source indique que les images ont ete produites avec l'aide de l'IA.
+Ces images illustrent des recherches et ne representent pas les menus ou les photos des restaurants.

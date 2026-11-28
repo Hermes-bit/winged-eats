@@ -63,6 +63,19 @@ const BEST_CATS = [
   ['poi', 'Poisson braisé, attiéké', 'africaine'], ['bur', 'Burgers et sandwichs', 'fastfood'],
   ['bis', 'Bissap, gingembre, zoom-koom', 'cafe'],
 ];
+const SEARCH_IDEAS = [
+  ['Poulet', 'blackened-chicken-with'],
+  ['Poisson', 'grilled-swordfish-with'],
+  ['Pâtes', 'saffron-melon-linguine'],
+  ['Frites', 'french-fries-day-truff'],
+  ['Crevettes', 'cumin-lime-shrimp-with'],
+  ['Riz', 'raspberry-glazed-salmo'],
+  ['Salade', 'kale-nectarine--soba-s'],
+  ['Tartines', 'jammy-egg-toasts-with-'],
+  ['Pain', 'charred-corn-lemon--di'],
+  ['Légumes', 'blistered-sweet-pepper'],
+];
+const SEARCH_CAT_ICONS = { riz: '🍚', bro: '🍢', pou: '🍗', to: '🥣', poi: '🐟', bur: '🍔', bis: '🥤' };
 
 // ---------------------------------------------------------------------
 // Utilitaires
@@ -1135,13 +1148,12 @@ async function renderSearch(alive) {
   const origin = store.get('we_origin', null);
   if (!origin) return renderLogin();
   chrome('nav', 'search');
-  const input = el('input', { type: 'search', placeholder: 'Plats, restaurants, courses…', 'aria-label': 'Rechercher', value: searchQuery, autocomplete: 'off', enterkeyhint: 'search', style: 'flex:1;border:0;background:none;font-size:14px;outline:none' });
+  const input = el('input', { type: 'search', placeholder: 'Rechercher dans Winged Eats', 'aria-label': 'Rechercher', value: searchQuery, autocomplete: 'off', enterkeyhint: 'search', style: 'flex:1;border:0;background:none;outline:none' });
   const clear = el('button', { class: 'circ', type: 'button', style: 'width:30px;height:30px;background:#fff', 'aria-label': 'Effacer', hidden: !searchQuery }, I('x'));
   const body = el('div', { 'aria-live': 'polite' });
   setView(el('div', { class: 'pad search-header' },
-    el('h1', { class: 'search-title', text: 'Trouver votre bonheur' }),
-    el('p', { class: 'm', text: 'Un plat ou une adresse près de vous.' }),
-    el('form', { class: 'fl search-form', role: 'search', onsubmit: (e) => { e.preventDefault(); rememberSearch(input.value); input.blur(); } }, I('search'), input, clear)), body);
+    el('form', { class: 'fl search-form', role: 'search', 'aria-label': 'Recherche Winged Eats', onsubmit: (e) => { e.preventDefault(); rememberSearch(input.value); input.blur(); } },
+      el('button', { class: 'search-back', type: 'button', 'aria-label': 'Retour', onclick: () => goBack('#/') }, I('back')), input, clear)), body);
   let list = [];
   let menus = [];
   let loaded = false;
@@ -1178,13 +1190,20 @@ async function renderSearch(alive) {
       const recent = store.get('we_recent', []);
       const chips = recent.length ? recent : RECENT_IDEAS;
       fill(body,
-        el('div', { class: 'pad' },
-          el('div', { class: 'fl sp', style: 'margin:16px 0 8px' }, el('span', { class: 't', text: recent.length ? 'Recherches récentes' : 'Idées de recherche' }),
-            recent.length ? el('button', { class: 'chip', type: 'button', style: 'background:none', onclick: () => { store.remove('we_recent'); draw(); } }, 'Effacer') : null),
-          el('div', { style: 'display:flex;flex-wrap:wrap;gap:7px' }, chips.map((x) => el('button', { class: 'chip', type: 'button', onclick: () => { input.value = x; draw(); } }, I('clock'), x))),
-          el('div', { class: 't', style: 'margin:18px 0 4px' }, 'Meilleures catégories')),
-        el('div', { class: 'list' }, BEST_CATS.map(([k, l, cat]) => el('button', { type: 'button', style: 'padding:8px 16px', onclick: () => { homeState.category = cat; homeState.filters.clear(); location.hash = '#/'; } },
-          el('div', { style: 'width:40px' }, F(k, 40)), el('span', { class: 'grow', text: l }), I('right')))));
+        el('div', { class: 'search-recent-heading pad' },
+          el('span', { text: recent.length ? 'Recherches récentes' : 'Idées de recherche' }),
+          recent.length ? el('button', { class: 'search-clear-recent', type: 'button', onclick: () => { store.remove('we_recent'); draw(); } }, 'Effacer') : null),
+        el('div', { class: 'search-recents' }, chips.map((x) => el('button', { class: 'search-recent', type: 'button', onclick: () => { input.value = x; rememberSearch(x); draw(); } }, I('clock'), x))),
+        el('section', { class: 'search-discover pad' },
+          el('h2', { class: 'search-section-title', text: 'Des idées pour vous' }),
+          el('div', { class: 'search-ideas' }, SEARCH_IDEAS.map(([name, image]) => el('button', { class: 'search-idea', type: 'button', onclick: () => { input.value = name; rememberSearch(name); draw(); } },
+            el('span', { class: 'search-idea-image' }, el('img', { src: `search-images/${image}.webp`, alt: '', loading: 'lazy', decoding: 'async', onerror: (e) => e.currentTarget.remove() })),
+            el('span', { text: name })))),
+          el('p', { class: 'search-illustration-note', text: 'Images d’illustration créées avec l’aide de l’IA · disponibilité non garantie.' })),
+        el('section', { class: 'search-categories pad' },
+          el('h2', { class: 'search-section-title', text: 'Meilleures catégories' }),
+          el('div', { class: 'search-category-list' }, BEST_CATS.map(([k, l, cat]) => el('button', { type: 'button', onclick: () => { homeState.category = cat; homeState.filters.clear(); location.hash = '#/'; } },
+            el('span', { class: 'search-category-icon', 'aria-hidden': 'true', text: SEARCH_CAT_ICONS[k] }), el('span', { class: 'search-category-label', text: l }))))));
       return;
     }
     const fq = fold(q);
@@ -1204,7 +1223,10 @@ async function renderSearch(alive) {
           el('div', { style: 'width:40px' }, F(dishKey(item.name, restoKey(menu)), 40)),
           el('span', { class: 'grow' }, el('div', null, highlight(item.name, q)), el('div', { class: 'm', text: `${displayName(menu.name)}${!item.available ? ' · Rupture' : ''}` })),
           el('b', { text: fmtF(item.price) }))))] : null,
-      loaded && !restos.length && !dishes.length && !(googleOn() && q.length >= 3) ? emptyState('riz', 'Aucun résultat', `Rien ne correspond à « ${q} ».`) : null,
+      loaded && !restos.length && !dishes.length && !googleOn()
+        ? el('div', { class: 'pad', style: 'margin-top:16px' }, alertBox(googleError || 'La recherche Google est indisponible. Réessayez plus tard.', true))
+        : loaded && !restos.length && !dishes.length && q.length < 3
+          ? el('p', { class: 'm pad', text: 'Saisissez au moins 3 caractères pour rechercher sur Google Maps.' }) : null,
       googleOn() ? gSlot : null);
   };
   let deb = null;
@@ -1212,7 +1234,6 @@ async function renderSearch(alive) {
   input.addEventListener('input', () => { clearTimeout(deb); deb = setTimeout(draw, 120); });
   clear.addEventListener('click', () => { input.value = ''; draw(); input.focus(); });
   draw();
-  setTimeout(() => { if (alive()) input.focus({ preventScroll: true }); }, 60);
   try {
     list = await getRestaurants(origin);
     if (!alive()) return;
