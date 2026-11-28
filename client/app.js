@@ -1452,19 +1452,26 @@ async function renderGoogleMap(origin, alive, target = null) {
     const { AdvancedMarkerElement } = await google.maps.importLibrary('marker');
     if (!alive()) return;
     const map = new GoogleMap(host, { center: { lat: origin.latitude, lng: origin.longitude }, zoom: target ? 16 : 12, mapId: appConfig.google.map_id || 'DEMO_MAP_ID', disableDefaultUI: true, zoomControl: true, clickableIcons: false, gestureHandling: 'greedy' });
-    let markers = [];
+    let markers = new Map();
     let request = 0;
     let firstSearch = true;
+    let selectedPlace = null;
+    let mapStatus = '';
+    let mapError = null;
+    let moreAction = null;
     onCleanup(() => { request++; markers.forEach((marker) => { marker.map = null; }); google.maps.event.clearInstanceListeners(map); });
-    function show(p, count) {
+    function show() {
+      const p = selectedPlace;
       fill(sheet, el('div', { class: 'grab' }),
         p ? el('a', { class: 'fl', href: `#/p/${encodeURIComponent(p.id)}`, style: 'gap:10px' },
           el('div', { style: 'width:96px' }, placePhoto(p.photo, 240, 70)),
           el('div', { style: 'flex:1' }, el('div', { class: 't', text: p.name }),
             el('div', { class: 'm', text: [p.address, p.rating ? `★ ${fmtRating(p.rating)}` : null, p.open_now === true ? 'Ouvert' : p.open_now === false ? 'Fermé' : null].filter(Boolean).join(' · ') }),
             el('span', { class: 'soonp', text: 'Voir la fiche du restaurant' })), I('right'))
-          : el('p', { class: 'm', text: 'Aucun restaurant localisé dans cette zone.' }),
-        el('p', { class: 'm', style: 'font-size:11px', text: `${count} établissement(s) affiché(s) · Google renvoie au maximum 20 résultats par recherche. Déplacez la carte pour explorer une autre zone.` }),
+          : el('p', { class: 'm', text: mapStatus || 'Aucun restaurant localisé dans cette zone.' }),
+        el('p', { class: 'm', style: 'font-size:11px', text: `${markers.size} établissement(s) affiché(s) · ${mapStatus || 'Résultats Google non exhaustifs. Zoomez pour distinguer les repères et déplacez la carte pour explorer.'}` }),
+        mapError ? alertBox(mapError.message) : null,
+        moreAction ? el('button', { class: 'chip', type: 'button', onclick: moreAction }, mapError ? 'Réessayer les résultats supplémentaires' : 'Afficher plus de résultats') : null,
         googleCredit());
     }
     function addMarker(p) {
@@ -1473,30 +1480,65 @@ async function renderGoogleMap(origin, alive, target = null) {
       button.addEventListener('click', () => {
         map.panTo({ lat: p.latitude, lng: p.longitude });
         map.setZoom(16);
-        show(p, markers.length);
+        selectedPlace = p;
+        show();
       });
-      markers.push(new AdvancedMarkerElement({ map, position: { lat: p.latitude, lng: p.longitude }, content: button, title: p.name }));
+      markers.set(p.id, new AdvancedMarkerElement({ map, position: { lat: p.latitude, lng: p.longitude }, content: button, title: p.name }));
     }
-    if (target) { addMarker(target); show(target, 1); }
+    if (target) { addMarker(target); selectedPlace = target; show(); }
+    async function loadMapPages(current, center, pageToken, limit) {
+      let token = pageToken;
+      mapError = null;
+      moreAction = null;
+      mapStatus = 'Recherche de restaurants supplémentaires…';
+      show();
+      try {
+        for (let page = 0; page < limit; page++) {
+          const params = new URLSearchParams({ lat: center.latitude, lon: center.longitude });
+          if (token) params.set('pageToken', token);
+          const data = await api(`/places/map?${params}`);
+          if (!alive() || current !== request) return;
+          for (const p of data.places) {
+            if (Number.isFinite(p.latitude) && Number.isFinite(p.longitude) && !markers.has(p.id)) {
+              addMarker(p);
+              if (!selectedPlace) selectedPlace = p;
+            }
+          }
+          token = data.nextPageToken;
+          show();
+          if (!token) break;
+        }
+        mapStatus = '';
+        if (token) moreAction = () => loadMapPages(current, center, token, 1);
+      } catch (error) {
+        if (!alive() || current !== request) return;
+        mapStatus = 'Les résultats déjà chargés restent visibles.';
+        mapError = error;
+        moreAction = () => loadMapPages(current, center, token, 1);
+      }
+      if (alive() && current === request) show();
+    }
     async function findPlaces() {
       const current = ++request;
       search.disabled = true;
-      if (!markers.length) fill(sheet, el('div', { class: 'grab' }), el('p', { class: 'm', text: 'Recherche des restaurants…' }));
+      if (!markers.size) fill(sheet, el('div', { class: 'grab' }), el('p', { class: 'm', text: 'Recherche des restaurants…' }));
       try {
         const center = map.getCenter();
-        const places = await gNearby({ latitude: center.lat(), longitude: center.lng() });
+        const searchOrigin = { latitude: center.lat(), longitude: center.lng() };
+        const places = await gNearby(searchOrigin);
         if (!alive() || current !== request) return;
         markers.forEach((marker) => { marker.map = null; });
-        markers = [];
+        markers = new Map();
         const located = places.filter((p) => Number.isFinite(p.latitude) && Number.isFinite(p.longitude));
         const selected = firstSearch ? target : null;
         if (selected && !located.some((p) => p.id === selected.id)) located.unshift(selected);
         firstSearch = false;
-        for (const p of located) addMarker(p);
-        show(selected || located[0], located.length);
+        for (const p of located) if (!markers.has(p.id)) addMarker(p);
+        selectedPlace = selected || located[0] || null;
+        await loadMapPages(current, searchOrigin, null, 3);
       } catch (error) {
         if (alive() && current === request) {
-          if (!markers.length) fill(sheet, el('div', { class: 'grab' }));
+          if (!markers.size) fill(sheet, el('div', { class: 'grab' }));
           sheet.append(alertBox(error.message), el('button', { class: 'chip', type: 'button', onclick: findPlaces }, 'Réessayer'));
         }
       } finally { if (alive() && current === request) search.disabled = false; }
