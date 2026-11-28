@@ -1445,6 +1445,12 @@ function clearMapReturn() {
   clearTimeout(mapReturnTimer);
   mapReturn = null;
 }
+function expireMapReturnData() {
+  if (!mapReturn) return;
+  mapReturn.items = null;
+  mapReturn.pagination = null;
+  mapReturn.error = null;
+}
 
 function mapCard(item, alive, onOpen) {
   const isGoogle = item.kind === 'google';
@@ -1624,9 +1630,12 @@ async function renderGoogleMap(origin, alive, target = null, restored = null) {
     let mapError = null;
     let moreAction = null;
     let pagination = null;
+    let currentSearchOrigin = restored?.searchOrigin || origin;
+    let restoreOrder = null;
     onCleanup(() => { request++; markers.forEach((marker) => { marker.map = null; }); google.maps.event.clearInstanceListeners(map); });
     const carousel = mapCarousel(sheet, alive, (item) => {
       hasBrowsed = true;
+      restoreOrder = null;
       selectedPlace = item;
       map.panTo({ lat: item.latitude, lng: item.longitude });
       show();
@@ -1634,13 +1643,14 @@ async function renderGoogleMap(origin, alive, target = null, restored = null) {
       const center = map.getCenter();
       clearMapReturn();
       mapReturn = {
-        route: location.hash, selectedId: item.id, items,
+        route: location.hash, selectedId: item.id, items, ids: items.map((place) => place.id),
         center: item.id === selectedPlace?.id ? { lat: center.lat(), lng: center.lng() } : { lat: item.latitude, lng: item.longitude },
         zoom: map.getZoom(),
+        searchOrigin: currentSearchOrigin, expiresAt: Date.now() + PT,
         pagination: pagination ? { ...pagination } : null,
         error: mapError ? mapError.message : null,
       };
-      mapReturnTimer = setTimeout(clearMapReturn, PT);
+      mapReturnTimer = setTimeout(expireMapReturnData, PT);
     });
     function show(reset = false, preserveOrder = false) {
       const p = selectedPlace;
@@ -1649,7 +1659,10 @@ async function renderGoogleMap(origin, alive, target = null, restored = null) {
         marker.content.setAttribute('aria-pressed', String(id === p?.id));
       });
       let items = [...placesById.values()];
-      if (reset && !preserveOrder) items = nearbyMapItems(items, p?.id);
+      if (restoreOrder) {
+        const ranks = new Map(restoreOrder.map((id, i) => [id, i]));
+        items.sort((a, b) => (ranks.get(a.id) ?? Infinity) - (ranks.get(b.id) ?? Infinity));
+      } else if (reset && !preserveOrder) items = nearbyMapItems(items, p?.id);
       carousel.update(items, p?.id, reset);
       carousel.status(
         el('p', { class: 'm', text: `${markers.size} établissement(s) · ${mapStatus || 'Données Google Maps, résultats non exhaustifs.'}` }),
@@ -1664,6 +1677,7 @@ async function renderGoogleMap(origin, alive, target = null, restored = null) {
         map.setZoom(16);
         selectedPlace = placesById.get(p.id);
         hasBrowsed = false;
+        restoreOrder = null;
         show(true);
       });
       placesById.set(p.id, { ...p, kind: 'google' });
@@ -1675,7 +1689,7 @@ async function renderGoogleMap(origin, alive, target = null, restored = null) {
       mapError = null;
       moreAction = null;
       mapStatus = 'Recherche de restaurants supplémentaires…';
-      show();
+      show(Boolean(restoreOrder), true);
       try {
         for (let page = 0; page < limit; page++) {
           pagination = { center, token, remaining: limit - page, loading: true };
@@ -1703,7 +1717,10 @@ async function renderGoogleMap(origin, alive, target = null, restored = null) {
         pagination = { center, token, remaining: 1, loading: false };
         moreAction = () => loadMapPages(current, center, token, 1);
       }
-      if (alive() && current === request) show(!hasBrowsed && !mapError);
+      if (alive() && current === request) {
+        show(!hasBrowsed && !mapError, Boolean(restoreOrder));
+        restoreOrder = null;
+      }
     }
     async function findPlaces() {
       const current = ++request;
@@ -1712,10 +1729,12 @@ async function renderGoogleMap(origin, alive, target = null, restored = null) {
       mapError = null;
       moreAction = null;
       pagination = null;
+      restoreOrder = null;
       show();
       try {
         const center = map.getCenter();
         const searchOrigin = { latitude: center.lat(), longitude: center.lng() };
+        currentSearchOrigin = searchOrigin;
         const places = await gNearby(searchOrigin);
         if (!alive() || current !== request) return;
         markers.forEach((marker) => { marker.map = null; });
@@ -1741,7 +1760,25 @@ async function renderGoogleMap(origin, alive, target = null, restored = null) {
       } finally { if (alive() && current === request) search.disabled = false; }
     }
     search.addEventListener('click', findPlaces);
-    if (restored) {
+    if (restored && !restored.items) {
+      try {
+        const [place, places] = await Promise.all([gDetails(restored.selectedId, null), gNearby(restored.searchOrigin)]);
+        if (!alive()) return;
+        if (!Number.isFinite(place.latitude) || !Number.isFinite(place.longitude)) throw new Error('La position de ce restaurant est indisponible.');
+        restoreOrder = restored.ids;
+        const located = places.filter((p) => Number.isFinite(p.latitude) && Number.isFinite(p.longitude));
+        if (!located.some((p) => p.id === place.id)) located.push({ ...place, photo: place.photos?.[0] || null });
+        for (const p of located) if (!markers.has(p.id)) addMarker(p);
+        selectedPlace = placesById.get(restored.selectedId);
+        firstSearch = false;
+        show(true, true);
+        await loadMapPages(request, restored.searchOrigin, null, 3);
+      } catch (error) {
+        if (!alive()) return;
+        mapReturn = restored;
+        fill(sheet, alertBox(error.message), el('button', { class: 'chip', type: 'button', onclick: route }, 'Réessayer'));
+      }
+    } else if (restored) {
       for (const p of restored.items) addMarker(p);
       selectedPlace = placesById.get(restored.selectedId) || null;
       hasBrowsed = true;
@@ -1771,6 +1808,7 @@ async function renderMap(alive, placeId = null) {
   const savedOrigin = store.get('we_origin', null);
   let origin = { latitude: 12.3714, longitude: -1.5197, city: 'ouaga' };
   let target = null;
+  if (mapReturn && Date.now() >= mapReturn.expiresAt) expireMapReturnData();
   const restored = mapReturn?.route === location.hash ? mapReturn : null;
   if (restored) clearMapReturn();
   if (placeId && !restored) {
