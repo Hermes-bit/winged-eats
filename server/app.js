@@ -7,12 +7,15 @@ const publicRoutes = require('./routes/public');
 const partnerRoutes = require('./routes/partner');
 const { createPlacesRouter } = require('./routes/places');
 const { createPlacesService } = require('./services/places');
+const { createModeration } = require('./services/moderation');
+const { createAdminRouter } = require('./routes/admin');
 const config = require('./config');
 
 // `options.places` permet aux tests d'injecter un service Google simulé.
 function createApp(db, options = {}) {
   const app = express();
   const places = options.places || createPlacesService(config.GOOGLE);
+  const moderation = options.moderation || createModeration(config.MODERATION);
   app.use(express.json({ limit: '100kb' }));
   app.use((req, res, next) => {
     req.db = db;
@@ -21,6 +24,15 @@ function createApp(db, options = {}) {
   });
 
   app.use('/api', (req, res, next) => {
+    if (req.path.startsWith('/admin/')) {
+      res.vary('Origin');
+      if (req.get('Origin') === 'https://hermes-bit.github.io') {
+        res.set('Access-Control-Allow-Origin', 'https://hermes-bit.github.io');
+        res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
+        res.set('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+        if (req.method === 'OPTIONS') return res.sendStatus(204);
+      }
+    }
     if (req.method === 'GET' && (req.path === '/config' || req.path.startsWith('/places/'))) {
       res.vary('Origin');
       if (req.get('Origin') === 'https://hermes-bit.github.io') {
@@ -31,7 +43,8 @@ function createApp(db, options = {}) {
   });
 
   app.use('/api/partner', partnerRoutes);
-  app.use('/api', createPlacesRouter(places, options.google || config.GOOGLE));
+  app.use('/api/admin', createAdminRouter(places, moderation));
+  app.use('/api', createPlacesRouter(places, options.google || config.GOOGLE, moderation));
   app.use('/api', publicRoutes);
 
   const webRoot = path.join(__dirname, '..', 'web');

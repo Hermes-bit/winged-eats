@@ -24,6 +24,12 @@ module.exports = {
   },
   DEFAULT_COMMISSION_RATE: 0.15,
   PICKUP_CODE_DIGITS: 4,
+  MODERATION: {
+    url: clean(process.env.SUPABASE_URL),
+    anonKey: clean(process.env.SUPABASE_ANON_KEY),
+    serviceKey: clean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+    adminUserId: clean(process.env.WINGED_ADMIN_USER_ID),
+  },
 
   // Google Maps Platform (facultatif : sans clé, l'application fonctionne avec ses seules données).
   GOOGLE: {

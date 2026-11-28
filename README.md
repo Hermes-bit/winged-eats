@@ -77,3 +77,34 @@ Fonctionnement :
 
 ## Données locales
 La base est créée dans `data/winged_eats.db`. Ce dossier ne doit pas être versionné.
+
+## Administration des restaurants Google
+
+L'interface privée est accessible sur `https://hermes-bit.github.io/winged-eats/admin/`.
+Elle recherche les fiches Google par quartier et permet de masquer un restaurant ou
+toutes ses photos, puis de retrouver et annuler les décisions enregistrées. Les
+identifiants Google et les décisions sont conservés dans Supabase, pas les photos
+ni les noms et adresses Google. Les photos Google ne disposent pas de référence
+durable : le choix individuel d'une photo n'est pas proposé. Les décisions ne
+modifient ni Google Maps ni le repli OpenStreetMap. Les listes déjà ouvertes
+peuvent rester en mémoire jusqu'à cinq minutes ; actualiser l'application pour
+voir immédiatement une décision. Les recherches et photos utilisent Google Places
+et peuvent être facturées.
+
+Pour activer l'administration :
+
+1. Dans le projet Supabase Winged Eats, exécuter `docs/moderation-supabase.sql`
+   dans le SQL Editor. La table est protégée par RLS ; ne pas créer de règle
+   permettant à `anon` ou `authenticated` d'y écrire ou de la lire.
+2. Dans Authentication > Users, créer l'unique compte administrateur avec un
+   mot de passe solide et noter son identifiant UUID. Garder les inscriptions
+   publiques désactivées si elles ne sont pas nécessaires.
+3. Dans les variables d'environnement **privées** du service Render, ajouter
+   ensemble `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+   et `WINGED_ADMIN_USER_ID` (UUID du compte créé), puis redéployer. L'URL est
+   de la forme `https://<project-ref>.supabase.co`. La clé `service_role` doit
+   rester exclusivement sur le serveur, jamais dans le site, Git ou un message.
+4. Se connecter à l'interface et vérifier le masquage puis la restauration d'une
+   fiche. Sans configuration complète, l'administration est indisponible ; une
+   erreur Supabase après activation empêche d'afficher les résultats Google au
+   lieu d'ignorer silencieusement les décisions.

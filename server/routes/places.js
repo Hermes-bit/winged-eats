@@ -22,8 +22,15 @@ function readOrigin(query, required) {
   return { latitude, longitude };
 }
 
-function createPlacesRouter(places, google) {
+function createPlacesRouter(places, google, moderation) {
   const router = express.Router();
+  async function applyModeration(list) {
+    const decisions = await moderation.decisions(list.map((p) => p.id));
+    return list.filter((p) => !decisions.get(p.id)?.hidden).map((p) => {
+      if (!decisions.get(p.id)?.photos_hidden) return p;
+      return { ...p, photo: null, ...(p.photos ? { photos: [] } : {}) };
+    });
+  }
 
   // Configuration publique de l'interface. La clé navigateur est faite pour être visible :
   // elle doit être restreinte au domaine du site dans Google Cloud.
@@ -40,33 +47,41 @@ function createPlacesRouter(places, google) {
   });
 
   router.get('/places/nearby', wrap(async (req, res) => {
-    res.json(await places.nearby(readOrigin(req.query, true)));
+    res.json(await applyModeration(await places.nearby(readOrigin(req.query, true))));
   }));
 
   router.get('/places/search', wrap(async (req, res) => {
     const origin = readOrigin(req.query, true);
-    res.json(await places.search(origin, {
+    res.json(await applyModeration(await places.search(origin, {
       text: typeof req.query.q === 'string' ? req.query.q : '',
       category: typeof req.query.cat === 'string' && req.query.cat ? req.query.cat : null,
-    }));
+    })));
   }));
 
   router.get('/places/neighborhood', wrap(async (req, res) => {
-    res.json(await places.neighborhood(readOrigin(req.query, false), {
+    const data = await places.neighborhood(readOrigin(req.query, false), {
       name: req.query.name,
       pageToken: req.query.pageToken,
-    }));
+    });
+    res.json({ ...data, places: await applyModeration(data.places) });
   }));
 
   // Redirige vers l'image hébergée par Google : toujours la photo actuelle de l'établissement.
   router.get('/places/photo', wrap(async (req, res) => {
+    const id = typeof req.query.name === 'string' ? req.query.name.split('/')[1] : '';
+    const decisions = await moderation.decisions(id ? [id] : []);
+    if (decisions.get(id)?.hidden || decisions.get(id)?.photos_hidden) throw new ApiError(404, 'Photo indisponible sur Winged Eats');
     const uri = await places.photoUri(req.query.name, req.query.w);
     res.set('Cache-Control', 'no-store');
     res.redirect(302, uri);
   }));
 
   router.get('/places/:id', wrap(async (req, res) => {
-    res.json(await places.details(req.params.id, readOrigin(req.query, false)));
+    const decisions = await moderation.decisions([req.params.id]);
+    if (decisions.get(req.params.id)?.hidden) throw new ApiError(404, 'Établissement indisponible sur Winged Eats');
+    let place = await places.details(req.params.id, readOrigin(req.query, false));
+    if (decisions.get(req.params.id)?.photos_hidden) place = { ...place, photo: null, photos: [] };
+    res.json(place);
   }));
 
   return router;

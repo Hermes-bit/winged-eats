@@ -71,8 +71,8 @@ function webUrl(value) {
 }
 
 function photoOf(p) {
-  const author = (p.authorAttributions || [])[0] || {};
-  return { name: p.name, author: author.displayName || null, author_uri: author.uri || null };
+  const authors = (p.authorAttributions || []).filter((a) => a.displayName).map((a) => ({ name: a.displayName, uri: webUrl(a.uri) }));
+  return { name: p.name, author: authors[0]?.name || null, author_uri: authors[0]?.uri || null, authors };
 }
 
 function normalize(place, origin) {
