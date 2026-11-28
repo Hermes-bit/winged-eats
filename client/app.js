@@ -7,16 +7,69 @@
 // Fonctions en démonstration (signalées) : paiement mobile, SMS, livreur, abonnements.
 // =====================================================================
 
-// Centres approximatifs des quartiers (à remplacer par les données SIG).
+// Points indicatifs ; les limites et l'exhaustivité des quartiers ne sont pas garanties.
+// Pour Ouagadougou, données GeoNames adaptées (CC BY 4.0), sauf Zone du Bois.
 const CITIES = {
   ouaga: {
     name: 'Ouagadougou', short: 'Ouaga',
     zones: [
-      { name: 'Ouaga 2000', latitude: 12.3650, longitude: -1.5100 },
+      { name: 'Ouaga 2000', latitude: 12.31538, longitude: -1.50888 },
       { name: 'Zone du Bois', latitude: 12.3580, longitude: -1.5040 },
-      { name: "Patte d'Oie", latitude: 12.3450, longitude: -1.5500 },
-      { name: 'Zogona', latitude: 12.3760, longitude: -1.4980 },
-      { name: 'Gounghin', latitude: 12.3640, longitude: -1.5450 },
+      { name: "Patte d'Oie", latitude: 12.32495, longitude: -1.51638 },
+      { name: 'Zogona', latitude: 12.37829, longitude: -1.49058 },
+      { name: 'Gounghin', latitude: 12.35895, longitude: -1.54442 },
+      { name: '1200 Logements', latitude: 12.36888, longitude: -1.4975 },
+      { name: 'Balkuy', latitude: 12.29979, longitude: -1.45207 },
+      { name: 'Bendogo', latitude: 12.39508, longitude: -1.45425 },
+      { name: 'Bilbalogho', latitude: 12.3626, longitude: -1.5311, aliases: ['Bilbalogo'] },
+      { name: 'Bissighin', latitude: 12.39354, longitude: -1.60484 },
+      { name: 'Boassa', latitude: 12.2921, longitude: -1.61694 },
+      { name: 'Cissin', latitude: 12.32472, longitude: -1.53489 },
+      { name: 'Cité An III', latitude: 12.3757, longitude: -1.53289, aliases: ['Cité An 3'] },
+      { name: 'Cité An II', latitude: 12.34488, longitude: -1.52421 },
+      { name: 'Cité An IV B', latitude: 12.39009, longitude: -1.56922 },
+      { name: 'Cité Azimo', latitude: 12.40413, longitude: -1.55898 },
+      { name: 'Cité Socogib', latitude: 12.38382, longitude: -1.4844, aliases: ['SOCOGIB'] },
+      { name: 'Cité de la Caisse', latitude: 12.31054, longitude: -1.51716 },
+      { name: 'Cité de l’Avenir', latitude: 12.39398, longitude: -1.45727 },
+      { name: 'Dapoya', latitude: 12.38145, longitude: -1.52389 },
+      { name: 'Dassasgho', latitude: 12.38719, longitude: -1.46896, aliases: ['Dassasgo'] },
+      { name: 'Gounghin Nord', latitude: 12.3612, longitude: -1.55055 },
+      { name: 'Gounghin Sud', latitude: 12.35298, longitude: -1.54342 },
+      { name: 'Hamdalaye', latitude: 12.37666, longitude: -1.55029 },
+      { name: 'Kalgondin', latitude: 12.35058, longitude: -1.49918, aliases: ['Kalghondin'] },
+      { name: 'Kamboinsé', latitude: 12.4486, longitude: -1.56279 },
+      { name: 'Kamsonghin', latitude: 12.35418, longitude: -1.52177 },
+      { name: 'Kilwin', latitude: 12.39546, longitude: -1.58819 },
+      { name: 'Kologh-Naba', latitude: 12.3833, longitude: -1.54276, aliases: ['Kologh Naba'] },
+      { name: 'Kossodo', latitude: 12.41498, longitude: -1.47193 },
+      { name: 'Koulouba', latitude: 12.36702, longitude: -1.51111 },
+      { name: 'Kouritenga', latitude: 12.3197, longitude: -1.54269 },
+      { name: 'Larlé', latitude: 12.37422, longitude: -1.54187 },
+      { name: 'Nampougou', latitude: 12.34275, longitude: -1.58532 },
+      { name: 'Nemnin', latitude: 12.3813, longitude: -1.53076 },
+      { name: 'Nioko 1', latitude: 12.39501, longitude: -1.43861 },
+      { name: 'Nioko 2', latitude: 12.43026, longitude: -1.45562 },
+      { name: 'Nonsin', latitude: 12.37386, longitude: -1.56559 },
+      { name: 'Ouidi', latitude: 12.37933, longitude: -1.54027 },
+      { name: 'Paspanga', latitude: 12.37991, longitude: -1.51733 },
+      { name: 'Pissy', latitude: 12.33815, longitude: -1.56503 },
+      { name: 'Quartiers Saints', latitude: 12.35964, longitude: -1.52342 },
+      { name: 'Samandin', latitude: 12.34977, longitude: -1.53241 },
+      { name: 'Sandogo', latitude: 12.31785, longitude: -1.59374 },
+      { name: 'Sanyiri', latitude: 12.34629, longitude: -1.48007 },
+      { name: 'Silmiougou', latitude: 12.37149, longitude: -1.65651 },
+      { name: 'Somgandé', latitude: 12.40927, longitude: -1.50267 },
+      { name: 'Tabtenga', latitude: 12.37245, longitude: -1.4518, aliases: ['Taabtenga'] },
+      { name: 'Tampouy', latitude: 12.39995, longitude: -1.57086 },
+      { name: 'Tanghin', latitude: 12.39896, longitude: -1.53289 },
+      { name: 'Toukin', latitude: 12.39678, longitude: -1.50234 },
+      { name: 'Wayalghin', latitude: 12.3996, longitude: -1.47502 },
+      { name: 'Wemtenga', latitude: 12.37056, longitude: -1.48919 },
+      { name: 'Yamtenga', latitude: 12.34849, longitude: -1.44766 },
+      { name: 'Zagtouli', latitude: 12.32924, longitude: -1.62566 },
+      { name: 'Zone pilote de Cissin', latitude: 12.33359, longitude: -1.52965 },
+      { name: 'Zongo', latitude: 12.34595, longitude: -1.59856 },
     ],
   },
   bobo: {
@@ -424,18 +477,32 @@ function zoneSheet(cityKey, message) {
         () => { gps.disabled = false; fill(err, alertBox('Position refusée. Choisissez un quartier.')); },
         { timeout: 10000 });
     };
+    const list = el('div', { class: 'list', style: 'margin:0 -16px' });
+    const status = el('p', { class: 'm', 'aria-live': 'polite' });
+    const filter = el('input', { type: 'search', placeholder: 'Rechercher un quartier', 'aria-label': 'Rechercher un quartier', maxlength: 80, class: 'zone-filter' });
+    function showZones() {
+      const query = fold(filter.value.trim());
+      const zones = city.zones.filter((z) => [z.name, ...(z.aliases || [])].some((name) => fold(name).includes(query)));
+      fill(list, zones.map((z) => el('button', {
+        type: 'button', onclick: () => chooseOrigin({ label: z.name, city: cityKey, latitude: z.latitude, longitude: z.longitude }, close),
+      }, el('span', { class: 'circ' }, I(current && current.city === cityKey && current.label === z.name ? 'check' : 'pin')), el('span', { class: 'grow', text: z.name }), I('right'))));
+      status.textContent = zones.length ? `${zones.length} quartier${zones.length > 1 ? 's' : ''}` : 'Aucun quartier trouvé. Vous pouvez utiliser votre position.';
+    }
+    filter.addEventListener('input', showZones);
+    showZones();
     return [
       el('div', { class: 'grab' }),
       el('h2', { text: `Où livrer à ${city.name} ?` }),
       el('p', { class: 'sub', text: 'Choisissez votre quartier ou utilisez votre position.' }),
       el('div', { class: 'seg', style: 'grid-template-columns:1fr 1fr;margin-bottom:12px' },
         Object.entries(CITIES).map(([k, c]) => el('button', { type: 'button', class: k === cityKey ? 'on' : '', onclick: () => { close(); setTimeout(() => zoneSheet(k), 220); } }, c.name))),
-      gps,
+      gps, err,
       el('div', { class: 'divi', text: 'ou un quartier' }),
-      el('div', { class: 'list', style: 'margin:0 -16px' }, city.zones.map((z) => el('button', {
-        type: 'button', onclick: () => chooseOrigin({ label: z.name, city: cityKey, latitude: z.latitude, longitude: z.longitude }, close),
-      }, el('span', { class: 'circ' }, I(current && current.label === z.name ? 'check' : 'pin')), el('span', { class: 'grow', text: z.name }), I('right')))),
-      err,
+      filter, status,
+      cityKey === 'ouaga' ? el('p', { class: 'm zone-source' }, 'Liste non exhaustive ; positions indicatives. Données complémentaires : ',
+        el('a', { href: 'https://www.geonames.org/', target: '_blank', rel: 'noopener noreferrer' }, 'GeoNames'),
+        ' (', el('a', { href: 'https://creativecommons.org/licenses/by/4.0/', target: '_blank', rel: 'noopener noreferrer' }, 'CC BY 4.0'), ').') : null,
+      list,
     ];
   }, { label: 'Adresse de livraison' });
 }
@@ -1132,7 +1199,7 @@ function renderNeighborhoods(alive) {
       el('p', { class: 'm', text: 'Recherchez un quartier de Ouagadougou. Google peut inclure des adresses voisines et ne garantit pas une liste exhaustive.' }),
       googleOn()
         ? [el('form', { class: 'fl search-form', role: 'search', onsubmit: (e) => { e.preventDefault(); search(input.value); input.blur(); } }, I('search'), input, el('button', { class: 'chip', type: 'submit' }, 'Chercher')),
-          el('div', { class: 'chips', style: 'margin-top:12px' }, CITIES.ouaga.zones.map((zone) => el('button', { class: 'chip', type: 'button', onclick: () => search(zone.name) }, zone.name)))]
+          el('div', { class: 'chips', style: 'margin-top:12px' }, CITIES.ouaga.zones.slice(0, 5).map((zone) => el('button', { class: 'chip', type: 'button', onclick: () => search(zone.name) }, zone.name)))]
         : alertBox('La recherche Google est indisponible. Réessayez plus tard.')),
     status, results, more, googleCredit());
 }
