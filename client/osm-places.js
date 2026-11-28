@@ -8,10 +8,10 @@
   const cache = new Map();
   const text = (value) => typeof value === 'string' ? value.trim() : '';
 
-  async function json(url, options = {}) {
+  async function json(url, options = {}, timeoutMs = 25000) {
     let response;
     try {
-      response = await fetch(url, { ...options, signal: AbortSignal.timeout(25000) });
+      response = await fetch(url, { ...options, signal: AbortSignal.timeout(timeoutMs) });
     } catch {
       throw new Error('Données OpenStreetMap indisponibles. Vérifiez votre connexion.');
     }
@@ -45,13 +45,21 @@
     const hit = cache.get(city);
     if (hit && Date.now() - hit.at < 300000) return hit.items;
     const [lat, lon] = center;
-    const query = `[out:json][timeout:20];nwr(around:8000,${lat},${lon})["amenity"~"^(restaurant|fast_food|cafe|food_court)$"]["name"];out center;`;
-    const data = await json('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-      body: new URLSearchParams({ data: query }),
-    });
-    if (!Array.isArray(data.elements) || data.remark) throw new Error('La recherche OpenStreetMap est incomplète. Réessayez.');
+    const query = `[out:json][timeout:10];nwr(around:8000,${lat},${lon})["amenity"~"^(restaurant|fast_food|cafe|food_court)$"]["name"];out center;`;
+    let data;
+    let lastError;
+    for (const endpoint of ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter']) {
+      try {
+        data = await json(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+          body: new URLSearchParams({ data: query }),
+        }, 12000);
+        if (!Array.isArray(data.elements) || data.remark) throw new Error('La recherche OpenStreetMap est incomplète.');
+        break;
+      } catch (error) { lastError = error; data = null; }
+    }
+    if (!data) throw new Error(`Impossible de charger les restaurants OpenStreetMap. ${lastError.message}`);
     const items = data.elements.map(normalize).filter(Boolean);
     cache.set(city, { at: Date.now(), items });
     return items;

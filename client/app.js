@@ -1228,10 +1228,35 @@ function mapDistance(a, b) {
 
 let mapsLoading = null;
 let mapsAuthFailed = false;
+let mapsErrorCode = null;
+let mapsErrorCaptureInstalled = false;
+function captureMapsError() {
+  if (mapsErrorCaptureInstalled) return;
+  mapsErrorCaptureInstalled = true;
+  const originalError = console.error;
+  const captureError = function (...args) {
+    const message = args.filter((arg) => typeof arg === 'string').join(' ');
+    if (message.includes('Google Maps JavaScript API error')) {
+      const code = message.match(/\b[A-Za-z]+MapError\b/)?.[0];
+      if (code) {
+        mapsErrorCode = code;
+        const diagnostic = document.getElementById('maps-error-code');
+        if (diagnostic) diagnostic.textContent = `Code Google Maps : ${code}`;
+      }
+    }
+    originalError.apply(console, args);
+  };
+  console.error = captureError;
+  setTimeout(() => {
+    if (console.error === captureError) console.error = originalError;
+    mapsErrorCaptureInstalled = false;
+  }, 30000);
+}
 function loadGoogleMaps(key) {
   if (window.google?.maps?.importLibrary) return Promise.resolve();
   if (mapsLoading) return mapsLoading;
   mapsLoading = new Promise((resolve, reject) => {
+    captureMapsError();
     const timer = setTimeout(() => reject(new Error('Google Maps ne répond pas.')), 15000);
     window.__weMapsReady = () => { clearTimeout(timer); resolve(); };
     window.gm_authFailure = () => {
@@ -1249,7 +1274,7 @@ function loadGoogleMaps(key) {
   return mapsLoading;
 }
 
-async function renderGoogleMap(origin, alive) {
+async function renderGoogleMap(origin, alive, target = null) {
   chrome('nav', 'map');
   const host = el('div', { class: 'gmap', 'aria-label': 'Carte Google des restaurants' });
   const sheet = el('div', { class: 'msheet', 'aria-live': 'polite' });
@@ -1264,14 +1289,37 @@ async function renderGoogleMap(origin, alive) {
     const { Map: GoogleMap } = await google.maps.importLibrary('maps');
     const { AdvancedMarkerElement } = await google.maps.importLibrary('marker');
     if (!alive()) return;
-    const map = new GoogleMap(host, { center: { lat: origin.latitude, lng: origin.longitude }, zoom: 14, mapId: appConfig.google.map_id || 'DEMO_MAP_ID', disableDefaultUI: true, zoomControl: true, clickableIcons: false, gestureHandling: 'greedy' });
+    const map = new GoogleMap(host, { center: { lat: origin.latitude, lng: origin.longitude }, zoom: target ? 16 : 12, mapId: appConfig.google.map_id || 'DEMO_MAP_ID', disableDefaultUI: true, zoomControl: true, clickableIcons: false, gestureHandling: 'greedy' });
     let markers = [];
     let request = 0;
+    let firstSearch = true;
     onCleanup(() => { request++; markers.forEach((marker) => { marker.map = null; }); google.maps.event.clearInstanceListeners(map); });
+    function show(p, count) {
+      fill(sheet, el('div', { class: 'grab' }),
+        p ? el('a', { class: 'fl', href: `#/p/${encodeURIComponent(p.id)}`, style: 'gap:10px' },
+          el('div', { style: 'width:96px' }, F(placeKey(p), 70, photoImg(p.photo, 240))),
+          el('div', { style: 'flex:1' }, el('div', { class: 't', text: p.name }),
+            el('div', { class: 'm', text: [p.address, p.rating ? `★ ${fmtRating(p.rating)}` : null, p.open_now === true ? 'Ouvert' : p.open_now === false ? 'Fermé' : null].filter(Boolean).join(' · ') }),
+            el('span', { class: 'soonp', text: 'Voir la fiche du restaurant' })), I('right'))
+          : el('p', { class: 'm', text: 'Aucun restaurant localisé dans cette zone.' }),
+        el('p', { class: 'm', style: 'font-size:11px', text: `${count} établissement(s) affiché(s) · Google renvoie au maximum 20 résultats par recherche. Déplacez la carte pour explorer une autre zone.` }),
+        googleCredit());
+    }
+    function addMarker(p) {
+      const button = pinEl({ kind: 'google', name: p.name, km: p.distance_km, label: null });
+      button.classList.add('gm');
+      button.addEventListener('click', () => {
+        map.panTo({ lat: p.latitude, lng: p.longitude });
+        map.setZoom(16);
+        show(p, markers.length);
+      });
+      markers.push(new AdvancedMarkerElement({ map, position: { lat: p.latitude, lng: p.longitude }, content: button, title: p.name }));
+    }
+    if (target) { addMarker(target); show(target, 1); }
     async function findPlaces() {
       const current = ++request;
       search.disabled = true;
-      fill(sheet, el('div', { class: 'grab' }), el('p', { class: 'm', text: 'Recherche des restaurants…' }));
+      if (!markers.length) fill(sheet, el('div', { class: 'grab' }), el('p', { class: 'm', text: 'Recherche des restaurants…' }));
       try {
         const center = map.getCenter();
         const places = await gNearby({ latitude: center.lat(), longitude: center.lng() });
@@ -1279,26 +1327,16 @@ async function renderGoogleMap(origin, alive) {
         markers.forEach((marker) => { marker.map = null; });
         markers = [];
         const located = places.filter((p) => Number.isFinite(p.latitude) && Number.isFinite(p.longitude));
-        function show(p) {
-          fill(sheet, el('div', { class: 'grab' }),
-            p ? el('a', { class: 'fl', href: `#/p/${encodeURIComponent(p.id)}`, style: 'gap:10px' },
-              el('div', { style: 'width:96px' }, F(placeKey(p), 70, photoImg(p.photo, 240))),
-              el('div', { style: 'flex:1' }, el('div', { class: 't', text: p.name }),
-                el('div', { class: 'm', text: [p.address, p.rating ? `★ ${fmtRating(p.rating)}` : null, p.open_now === true ? 'Ouvert' : p.open_now === false ? 'Fermé' : null].filter(Boolean).join(' · ') }),
-                el('span', { class: 'soonp', text: 'Voir la fiche du restaurant' })), I('right'))
-              : el('p', { class: 'm', text: 'Aucun restaurant localisé dans cette zone.' }),
-            el('p', { class: 'm', style: 'font-size:11px', text: `${located.length} résultat(s) · Google renvoie au maximum 20 établissements par recherche. Déplacez la carte pour explorer une autre zone.` }),
-            googleCredit());
-        }
-        for (const p of located) {
-          const button = pinEl({ kind: 'google', name: p.name, km: p.distance_km, label: null });
-          button.classList.add('gm');
-          button.addEventListener('click', () => show(p));
-          markers.push(new AdvancedMarkerElement({ map, position: { lat: p.latitude, lng: p.longitude }, content: button, title: p.name }));
-        }
-        show(located[0]);
+        const selected = firstSearch ? target : null;
+        if (selected && !located.some((p) => p.id === selected.id)) located.unshift(selected);
+        firstSearch = false;
+        for (const p of located) addMarker(p);
+        show(selected || located[0], located.length);
       } catch (error) {
-        if (alive() && current === request) fill(sheet, el('div', { class: 'grab' }), alertBox(error.message), el('button', { class: 'chip', type: 'button', onclick: findPlaces }, 'Réessayer'));
+        if (alive() && current === request) {
+          if (!markers.length) fill(sheet, el('div', { class: 'grab' }));
+          sheet.append(alertBox(error.message), el('button', { class: 'chip', type: 'button', onclick: findPlaces }, 'Réessayer'));
+        }
       } finally { if (alive() && current === request) search.disabled = false; }
     }
     search.addEventListener('click', findPlaces);
@@ -1309,10 +1347,30 @@ async function renderGoogleMap(origin, alive) {
   }
 }
 
-async function renderMap(alive) {
-  const origin = store.get('we_origin', null);
-  if (!origin) return renderLogin();
-  if (appConfig.google.maps_key && googleOn() && !mapsAuthFailed) return renderGoogleMap(origin, alive);
+async function renderMap(alive, placeId = null) {
+  const savedOrigin = store.get('we_origin', null);
+  let origin = { latitude: 12.3714, longitude: -1.5197, city: 'ouaga' };
+  let target = null;
+  if (placeId) {
+    chrome('nav', 'map');
+    setView(topbar('Carte du restaurant'), el('div', { class: 'pad' }, el('p', { class: 'm', text: 'Chargement du restaurant…' })));
+    if (!appConfig.google.maps_key || !googleOn() || mapsAuthFailed) {
+      return setView(topbar('Carte du restaurant'), el('div', { class: 'pad' },
+        alertBox('La carte Google est indisponible : la position du restaurant ne peut pas être affichée ici.'),
+        el('span', { id: 'maps-error-code', class: 'm', text: mapsErrorCode ? `Code Google Maps : ${mapsErrorCode}` : '' }),
+        el('a', { class: 'btn lt', href: `#/p/${encodeURIComponent(placeId)}` }, 'Retour à la fiche')));
+    }
+    try { target = await gDetails(placeId, savedOrigin); } catch (e) {
+      if (alive()) setView(topbar('Carte du restaurant'), el('div', { class: 'pad' }, alertBox(e.message), el('button', { class: 'btn lt', type: 'button', onclick: route }, 'Réessayer')));
+      return;
+    }
+    if (!alive()) return;
+    if (!Number.isFinite(target.latitude) || !Number.isFinite(target.longitude)) {
+      return setView(topbar('Carte du restaurant'), el('div', { class: 'pad' }, alertBox('La position de ce restaurant n’est pas disponible.'), el('a', { class: 'btn lt', href: `#/p/${encodeURIComponent(placeId)}` }, 'Retour à la fiche')));
+    }
+    origin = { latitude: target.latitude, longitude: target.longitude, city: 'ouaga' };
+  }
+  if (appConfig.google.maps_key && googleOn() && !mapsAuthFailed) return renderGoogleMap(origin, alive, target);
   chrome('nav', 'map');
   const wrap = el('div', { class: 'mapw' }, planSvg());
   const sheet = el('div', { class: 'msheet' }, el('div', { class: 'grab' }), el('div', { class: 'skel', style: 'height:70px' }));
@@ -1335,6 +1393,9 @@ async function renderMap(alive) {
   let osmStatus = `${mapNotice} · chargement OpenStreetMap…`;
   let osmLoading = true;
   let osmError = null;
+  const mapDiagnostic = () => mapsAuthFailed
+    ? el('div', { id: 'maps-error-code', class: 'm', style: 'font-size:11px', text: mapsErrorCode ? `Code Google Maps : ${mapsErrorCode}` : '' })
+    : null;
   let addOsmPins = null;
   const paintSheet = () => {
     const it = all.find((x) => x.id === selected) || visible()[0];
@@ -1351,6 +1412,7 @@ async function renderMap(alive) {
             el('div', { class: 'soonp', text: 'Non partenaire · menu et commande indisponibles' }))),
         attribution,
         el('a', { class: 'm', href: `https://www.openstreetmap.org/${it.osmId}`, target: '_blank', rel: 'noopener noreferrer', text: 'Voir sur OpenStreetMap ↗' }),
+        mapDiagnostic(),
         el('div', { class: 'm', style: 'font-size:10px' }, `${osmStatus} · `,
           el('a', { href: 'https://www.openstreetmap.org/copyright', target: '_blank', rel: 'noopener noreferrer', text: '© contributeurs OpenStreetMap' })));
       if (it.commons) {
@@ -1371,6 +1433,7 @@ async function renderMap(alive) {
         el('div', { style: 'flex:1' }, el('div', { class: 't', text: it.name }), el('div', { class: 'm', text: it.sub }), el('span', { class: 'save', text: it.available ? 'Voir le menu et commander' : 'Voir le menu' })),
         I('right')) : el('p', { class: 'm', text: osmLoading ? 'Recherche des restaurants OpenStreetMap…' : osmError ? 'Impossible de charger les restaurants OpenStreetMap.' : 'Aucun restaurant trouvé sur OpenStreetMap dans cette zone.' }),
       osmError ? el('button', { class: 'chip', type: 'button', onclick: route }, 'Réessayer') : null,
+      mapDiagnostic(),
       el('div', { class: 'm', style: 'font-size:10px;margin-top:6px' }, `${osmStatus} · `,
         el('a', { href: 'https://www.openstreetmap.org/copyright', target: '_blank', rel: 'noopener noreferrer', text: '© contributeurs OpenStreetMap' })),
     );
@@ -1401,7 +1464,10 @@ async function renderMap(alive) {
     addOsmPins = (items) => { for (const it of items) {
       const p = pinEl(it);
       p.classList.add('gm');
-      p.addEventListener('click', () => select(it.id));
+      p.addEventListener('click', () => {
+        map.flyTo({ center: [it.lng, it.lat], zoom: 16 });
+        select(it.id);
+      });
       const marker = new lib.Marker({ element: p, anchor: 'bottom' }).setLngLat([it.lng, it.lat]);
       pins.set(it.id, p);
       markers.set(it.id, {
@@ -1420,10 +1486,18 @@ async function renderMap(alive) {
     fill(wrap, el('div', { class: 'pad' }, alertBox(`Carte indisponible : ${e.message}`), el('button', { class: 'btn lt', type: 'button', onclick: route }, 'Réessayer')));
     return;
   }
-  WEOSM.nearby(origin.city || 'ouaga').then((places) => {
+  if (!Array.isArray(appConfig.moderation?.excluded_osm_ids)) {
+    osmLoading = false;
+    osmError = 'La liste de modération est indisponible.';
+    osmStatus = `${mapNotice} · ${osmError}`;
+    paintSheet();
+    return;
+  }
+  const excludedOsmIds = new Set(appConfig.moderation.excluded_osm_ids);
+  WEOSM.nearby('ouaga').then((places) => {
     if (!alive()) return;
     osmLoading = false;
-    const additions = places.filter((p) => !all.some((partner) => partner.kind === 'partner'
+    const additions = places.filter((p) => !excludedOsmIds.has(p.id) && !all.some((partner) => partner.kind === 'partner'
       && fold(partner.name) === fold(p.name)
       && mapDistance({ latitude: partner.lat, longitude: partner.lng }, p) < 0.1)).map((p) => ({
       ...p, id: `osm:${p.id}`, osmId: p.id, kind: 'osm', lng: p.lon,
@@ -1476,6 +1550,8 @@ async function renderPlace(id, alive) {
       el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:8px' },
         tel ? el('a', { class: 'btn', href: `tel:${tel}` }, I('phone'), 'Appeler') : null,
         p.maps_uri ? el('a', { class: tel ? 'btn lt' : 'btn', href: p.maps_uri, target: '_blank', rel: 'noopener' }, I('loc'), 'Itinéraire') : null),
+      Number.isFinite(p.latitude) && Number.isFinite(p.longitude)
+        ? el('a', { class: 'btn lt', href: `#/map/${encodeURIComponent(p.id)}`, style: 'margin-top:8px' }, I('pin'), 'Voir sur la carte') : null,
       p.summary ? el('p', { class: 'm', style: 'font-size:13px;margin-top:14px', text: p.summary }) : null,
       el('div', { class: 't', style: 'margin:16px 0 4px', text: 'Menu' }),
       el('p', { class: 'm', style: 'font-size:13px;margin:4px 0 10px', text: tel
@@ -1677,7 +1753,7 @@ function route() {
   if (a === 'favorites') return renderFavorites(alive);
   if (a === 'search') return renderSearch(alive);
   if (a === 'quartiers') return renderNeighborhoods(alive);
-  if (a === 'map') return renderMap(alive);
+  if (a === 'map') return renderMap(alive, b ? decodeURIComponent(b) : null);
   if (a === 'offres') return renderOffres(alive);
   if (a === 'account') return renderAccount();
   if (a === 'livreur') return renderRider();
